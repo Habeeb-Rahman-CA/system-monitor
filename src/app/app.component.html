@@ -24,6 +24,10 @@
     <div class="app-info">
       <div class="app-logo">🛰️</div>
       <h1>System<span>Monitor</span></h1>
+      <nav class="main-tabs">
+        <button [class.active]="activeTab === 'dashboard'" (click)="setActiveTab('dashboard')">Dashboard</button>
+        <button [class.active]="activeTab === 'management'" (click)="setActiveTab('management')">Management</button>
+      </nav>
     </div>
 
     <div class="sys-meta">
@@ -39,213 +43,283 @@
     </div>
   </div>
 
-  <section class="stats-grid" *ngIf="systemStats">
-    <!-- CPU Card -->
-    <div class="stat-card cpu-card fade-in" *ngIf="systemStats">
-      <div class="card-header">
-        <span class="icon">⚡</span>
-        <h3>CPU History</h3>
-        <div class="header-values">
-          <span class="temp-badge" *ngIf="systemStats.cpu_temp !== null">{{ systemStats.cpu_temp.toFixed(0) }}°C</span>
-          <span class="percentage">{{ systemStats.cpu_usage.toFixed(1) }}%</span>
-        </div>
-      </div>
-      <div class="chart-container">
-        <canvas #cpuCanvas></canvas>
-      </div>
-    </div>
-
-    <!-- Per-Core Grid (New) -->
-    <div class="stat-card cores-card fade-in" *ngIf="systemStats">
-      <div class="card-header">
-        <span class="icon">🚥</span>
-        <h3>Per-Core Activity</h3>
-      </div>
-      <div class="cores-grid">
-        <div class="core-mini-card" *ngFor="let usage of systemStats.cpus; let i = index">
-          <div class="core-header">
-            <span class="core-label">C{{ i }}</span>
-            <span class="core-value">{{ usage.toFixed(0) }}%</span>
-          </div>
-          <div class="core-chart">
-            <canvas #coreCanvas></canvas>
+  <section class="dashboard-view" *ngIf="activeTab === 'dashboard'">
+    <section class="stats-grid" *ngIf="systemStats">
+      <!-- CPU Card -->
+      <div class="stat-card cpu-card fade-in" *ngIf="systemStats">
+        <div class="card-header">
+          <span class="icon">⚡</span>
+          <h3>CPU History</h3>
+          <div class="header-values">
+            <span class="temp-badge" *ngIf="systemStats.cpu_temp !== null">{{ systemStats.cpu_temp.toFixed(0)
+              }}°C</span>
+            <span class="percentage">{{ systemStats.cpu_usage.toFixed(1) }}%</span>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- RAM Card -->
-    <div class="stat-card ram-card fade-in" *ngIf="systemStats">
-      <div class="card-header">
-        <span class="icon">🧠</span>
-        <h3>Memory History</h3>
-        <span class="percentage">{{ getMemoryPercentage().toFixed(1) }}%</span>
-      </div>
-      <div class="chart-container">
-        <canvas #memoryCanvas></canvas>
-      </div>
-      <div class="memory-details-compact">
-        <span>{{ formatBytes(systemStats.memory_used) }} / {{ formatBytes(systemStats.memory_total) }}</span>
-      </div>
-    </div>
-
-    <!-- Network Card -->
-    <div class="stat-card net-card fade-in" *ngIf="systemStats">
-      <div class="card-header">
-        <span class="icon">🌐</span>
-        <h3>Network Traffic</h3>
-      </div>
-      <div class="chart-container">
-        <canvas #netTrafficCanvas></canvas>
-      </div>
-      <div class="net-stats-compact">
-        <span>⏬ {{ formatBytes(netSpeedIn) }}/s</span>
-        <span>⏫ {{ formatBytes(netSpeedOut) }}/s</span>
-      </div>
-    </div>
-
-    <!-- GPU Card -->
-    <div class="stat-card gpu-card fade-in" *ngIf="systemStats">
-      <div class="card-header">
-        <span class="icon">🎮</span>
-        <h3>GPU Usage</h3>
-        <div class="header-values">
-          <span class="percentage">{{ systemStats.gpu_usage.toFixed(1) }}%</span>
+        <div class="chart-container">
+          <canvas #cpuCanvas></canvas>
         </div>
       </div>
-      <div class="chart-container">
-        <canvas #gpuCanvas></canvas>
-      </div>
-      <div class="gpu-model-label">{{ systemStats.gpu_name }}</div>
-    </div>
 
-    <!-- Connectivity Card -->
-    <div class="stat-card conn-card fade-in" *ngIf="systemStats">
-      <div class="card-header">
-        <span class="icon">📡</span>
-        <h3>Connectivity</h3>
-      </div>
-      <div class="conn-stats">
-        <div class="conn-item">
-          <span class="label">Ping (Latency)</span>
-          <span class="value">{{ systemStats.ping }} ms</span>
+      <!-- Per-Core Grid (New) -->
+      <div class="stat-card cores-card fade-in" *ngIf="systemStats">
+        <div class="card-header">
+          <span class="icon">🚥</span>
+          <h3>Per-Core Activity</h3>
         </div>
-        <div class="conn-item">
-          <span class="label">WiFi Signal</span>
-          <span class="value">{{ systemStats.wifi_signal }}%</span>
-        </div>
-      </div>
-      <div class="chart-container-small">
-        <canvas #pingCanvas></canvas>
-      </div>
-    </div>
-
-    <!-- Disk Card -->
-    <div class="stat-card disk-card fade-in" *ngIf="systemStats">
-      <div class="card-header">
-        <span class="icon">💾</span>
-        <h3>Disk Activity</h3>
-      </div>
-      <div class="chart-container">
-        <canvas #diskIOHistoryCanvas></canvas>
-      </div>
-      <div class="disk-io-summary-compact">
-        <span class="read">R: {{ formatBytes(systemStats.disk_read_speed) }}/s</span>
-        <span class="write">W: {{ formatBytes(systemStats.disk_write_speed) }}/s</span>
-      </div>
-    </div>
-
-    <!-- Hardware Details Card -->
-    <div class="stat-card system-card fade-in" *ngIf="systemStats">
-      <div class="card-header">
-        <span class="icon">🛠️</span>
-        <h3>System Info</h3>
-      </div>
-      <div class="system-details">
-        <div class="detail-item">
-          <span class="label">CPU</span>
-          <span class="value">{{ systemStats.cpu_model }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">OS</span>
-          <span class="value">{{ systemStats.os_name }} {{ systemStats.os_version }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">GPU</span>
-          <span class="value">{{ systemStats.gpu_name }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- App Usage Tracking -->
-    <div class="stat-card usage-card fade-in" *ngIf="systemStats">
-      <div class="card-header">
-        <span class="icon">⏱️</span>
-        <h3>App Usage Tracking</h3>
-      </div>
-      <div class="usage-list">
-        <div class="usage-item" *ngFor="let app of topAppsUsage">
-          <span class="app-name">{{ app.name }}</span>
-          <span class="app-time">{{ formatDuration(app.time) }}</span>
-          <div class="usage-bar">
-            <div class="usage-fill" [style.width.%]="(app.time / topAppsUsage[0].time) * 100"></div>
+        <div class="cores-grid">
+          <div class="core-mini-card" *ngFor="let usage of systemStats.cpus; let i = index">
+            <div class="core-header">
+              <span class="core-label">C{{ i }}</span>
+              <span class="core-value">{{ usage.toFixed(0) }}%</span>
+            </div>
+            <div class="core-chart">
+              <canvas #coreCanvas></canvas>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Processes Card (Powerful Controller) -->
-    <div class="stat-card processes-card fade-in" *ngIf="systemStats">
-      <div class="card-header">
-        <span class="icon">🚀</span>
-        <h3>Process Controller</h3>
-        <div class="proc-actions">
-          <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input type="text" placeholder="Search by name or PID..." (input)="onSearch($event)">
-          </div>
-          <button class="icon-button" [class.active]="showTree" (click)="toggleTree()"
-            title="Toggle Tree View">🌳</button>
+      <!-- RAM Card -->
+      <div class="stat-card ram-card fade-in" *ngIf="systemStats">
+        <div class="card-header">
+          <span class="icon">🧠</span>
+          <h3>Memory History</h3>
+          <span class="percentage">{{ getMemoryPercentage().toFixed(1) }}%</span>
+        </div>
+        <div class="chart-container">
+          <canvas #memoryCanvas></canvas>
+        </div>
+        <div class="memory-details-compact">
+          <span>{{ formatBytes(systemStats.memory_used) }} / {{ formatBytes(systemStats.memory_total) }}</span>
         </div>
       </div>
-      <div class="process-list">
-        <table>
+
+      <!-- Network Card -->
+      <div class="stat-card net-card fade-in" *ngIf="systemStats">
+        <div class="card-header">
+          <span class="icon">🌐</span>
+          <h3>Network Traffic</h3>
+        </div>
+        <div class="chart-container">
+          <canvas #netTrafficCanvas></canvas>
+        </div>
+        <div class="net-stats-compact">
+          <span>⏬ {{ formatBytes(netSpeedIn) }}/s</span>
+          <span>⏫ {{ formatBytes(netSpeedOut) }}/s</span>
+        </div>
+      </div>
+
+      <!-- GPU Card -->
+      <div class="stat-card gpu-card fade-in" *ngIf="systemStats">
+        <div class="card-header">
+          <span class="icon">🎮</span>
+          <h3>GPU Usage</h3>
+          <div class="header-values">
+            <span class="percentage">{{ systemStats.gpu_usage.toFixed(1) }}%</span>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas #gpuCanvas></canvas>
+        </div>
+        <div class="gpu-model-label">{{ systemStats.gpu_name }}</div>
+      </div>
+
+      <!-- Connectivity Card -->
+      <div class="stat-card conn-card fade-in" *ngIf="systemStats">
+        <div class="card-header">
+          <span class="icon">📡</span>
+          <h3>Connectivity</h3>
+        </div>
+        <div class="conn-stats">
+          <div class="conn-item">
+            <span class="label">Ping (Latency)</span>
+            <span class="value">{{ systemStats.ping }} ms</span>
+          </div>
+          <div class="conn-item">
+            <span class="label">WiFi Signal</span>
+            <span class="value">{{ systemStats.wifi_signal }}%</span>
+          </div>
+        </div>
+        <div class="chart-container-small">
+          <canvas #pingCanvas></canvas>
+        </div>
+      </div>
+
+      <!-- Disk Card -->
+      <div class="stat-card disk-card fade-in" *ngIf="systemStats">
+        <div class="card-header">
+          <span class="icon">💾</span>
+          <h3>Disk Activity</h3>
+        </div>
+        <div class="chart-container">
+          <canvas #diskIOHistoryCanvas></canvas>
+        </div>
+        <div class="disk-io-summary-compact">
+          <span class="read">R: {{ formatBytes(systemStats.disk_read_speed) }}/s</span>
+          <span class="write">W: {{ formatBytes(systemStats.disk_write_speed) }}/s</span>
+        </div>
+      </div>
+
+      <!-- Hardware Details Card -->
+      <div class="stat-card system-card fade-in" *ngIf="systemStats">
+        <div class="card-header">
+          <span class="icon">🛠️</span>
+          <h3>System Info</h3>
+        </div>
+        <div class="system-details">
+          <div class="detail-item">
+            <span class="label">CPU</span>
+            <span class="value">{{ systemStats.cpu_model }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">OS</span>
+            <span class="value">{{ systemStats.os_name }} {{ systemStats.os_version }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">GPU</span>
+            <span class="value">{{ systemStats.gpu_name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- App Usage Tracking -->
+      <div class="stat-card usage-card fade-in" *ngIf="systemStats">
+        <div class="card-header">
+          <span class="icon">⏱️</span>
+          <h3>App Usage Tracking</h3>
+        </div>
+        <div class="usage-list">
+          <div class="usage-item" *ngFor="let app of topAppsUsage">
+            <span class="app-name">{{ app.name }}</span>
+            <span class="app-time">{{ formatDuration(app.time) }}</span>
+            <div class="usage-bar">
+              <div class="usage-fill" [style.width.%]="(app.time / topAppsUsage[0].time) * 100"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Processes Card (Powerful Controller) -->
+      <div class="stat-card processes-card fade-in" *ngIf="systemStats">
+        <div class="card-header">
+          <span class="icon">🚀</span>
+          <h3>Process Controller</h3>
+          <div class="proc-actions">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Search by name or PID..." (input)="onSearch($event)">
+            </div>
+            <button class="icon-button" [class.active]="showTree" (click)="toggleTree()"
+              title="Toggle Tree View">🌳</button>
+          </div>
+        </div>
+        <div class="process-list">
+          <table>
+            <thead>
+              <tr>
+                <th (click)="setSort('name')" class="sortable">Process <span
+                    *ngIf="sortKey==='name'">{{sortDir==='asc'?'↑':'↓'}}</span></th>
+                <th (click)="setSort('pid')" class="sortable">PID <span
+                    *ngIf="sortKey==='pid'">{{sortDir==='asc'?'↑':'↓'}}</span></th>
+                <th (click)="setSort('cpu_usage')" class="sortable">CPU% <span
+                    *ngIf="sortKey==='cpu_usage'">{{sortDir==='asc'?'↑':'↓'}}</span></th>
+                <th (click)="setSort('memory')" class="sortable">RAM <span
+                    *ngIf="sortKey==='memory'">{{sortDir==='asc'?'↑':'↓'}}</span></th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let proc of filteredProcesses" [class.favorite]="favorites.has(proc.pid)">
+                <td class="proc-name">
+                  <span class="fav-star" (click)="toggleFavorite(proc.pid)">{{ favorites.has(proc.pid) ? '⭐' : '☆'
+                    }}</span>
+                  <span class="name-text">{{ proc.name }}</span>
+                </td>
+                <td class="proc-pid">{{ proc.pid }}</td>
+                <td class="proc-cpu">{{ proc.cpu_usage.toFixed(1) }}%</td>
+                <td class="proc-mem">{{ formatBytes(proc.memory) }}</td>
+                <td class="proc-ops">
+                  <button class="kill-btn" (click)="killProcess(proc.pid)" title="End Task">❌</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Live Status -->
+      <div class="live-indicator">
+        <span class="dot pulse"></span>
+        Monitoring Live Metrics
+      </div>
+    </section>
+  </section>
+
+  <!-- Management View -->
+  <section class="management-view" *ngIf="activeTab === 'management'">
+    <div class="management-header">
+      <div class="management-tabs">
+        <button [class.active]="mgmtSubTab === 'services'" (click)="setMgmtSubTab('services')">Windows
+          Services</button>
+        <button [class.active]="mgmtSubTab === 'startup'" (click)="setMgmtSubTab('startup')">Startup Apps</button>
+      </div>
+      <div class="search-box management-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search services or startup items..." (input)="onMgmtSearch($event)">
+      </div>
+    </div>
+
+    <div class="management-container">
+      <!-- Services List -->
+      <div class="mgmt-card fade-in" *ngIf="mgmtSubTab === 'services'">
+        <table class="mgmt-table">
           <thead>
             <tr>
-              <th (click)="setSort('name')" class="sortable">Process <span
-                  *ngIf="sortKey==='name'">{{sortDir==='asc'?'↑':'↓'}}</span></th>
-              <th (click)="setSort('pid')" class="sortable">PID <span
-                  *ngIf="sortKey==='pid'">{{sortDir==='asc'?'↑':'↓'}}</span></th>
-              <th (click)="setSort('cpu_usage')" class="sortable">CPU% <span
-                  *ngIf="sortKey==='cpu_usage'">{{sortDir==='asc'?'↑':'↓'}}</span></th>
-              <th (click)="setSort('memory')" class="sortable">RAM <span
-                  *ngIf="sortKey==='memory'">{{sortDir==='asc'?'↑':'↓'}}</span></th>
+              <th>Service Name</th>
+              <th>Display Name</th>
+              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let proc of filteredProcesses" [class.favorite]="favorites.has(proc.pid)">
-              <td class="proc-name">
-                <span class="fav-star" (click)="toggleFavorite(proc.pid)">{{ favorites.has(proc.pid) ? '⭐' : '☆'
-                  }}</span>
-                <span class="name-text">{{ proc.name }}</span>
+            <tr *ngFor="let svc of filteredServices">
+              <td class="svc-name">{{ svc.name }}</td>
+              <td class="svc-display">{{ svc.display_name }}</td>
+              <td>
+                <span class="status-badge" [class.running]="svc.status === 'Running'">
+                  {{ svc.status }}
+                </span>
               </td>
-              <td class="proc-pid">{{ proc.pid }}</td>
-              <td class="proc-cpu">{{ proc.cpu_usage.toFixed(1) }}%</td>
-              <td class="proc-mem">{{ formatBytes(proc.memory) }}</td>
-              <td class="proc-ops">
-                <button class="kill-btn" (click)="killProcess(proc.pid)" title="End Task">❌</button>
+              <td>
+                <button class="mgmt-btn" [class.running]="svc.status === 'Running'" (click)="toggleService(svc)">
+                  {{ svc.status === 'Running' ? '⏹ Stop' : '▶ Start' }}
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
 
-    <!-- Live Status -->
-    <div class="live-indicator">
-      <span class="dot pulse"></span>
-      Monitoring Live Metrics
+      <!-- Startup Apps List -->
+      <div class="mgmt-card fade-in" *ngIf="mgmtSubTab === 'startup'">
+        <table class="mgmt-table">
+          <thead>
+            <tr>
+              <th>App Name</th>
+              <th>Command / Path</th>
+              <th>Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let app of filteredStartupApps">
+              <td class="app-name-mgmt">{{ app.name }}</td>
+              <td class="app-cmd"><code>{{ app.command }}</code></td>
+              <td class="app-loc">{{ app.location }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 

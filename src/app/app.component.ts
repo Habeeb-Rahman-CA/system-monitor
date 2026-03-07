@@ -15,6 +15,18 @@ interface DiskInfo {
   kind: string;
 }
 
+interface ServiceInfo {
+  name: string;
+  display_name: string;
+  status: string;
+}
+
+interface StartupInfo {
+  name: string;
+  command: string;
+  location: string;
+}
+
 interface ProcessInfo {
   name: string;
   pid: number;
@@ -111,9 +123,19 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   expandedParents: Set<number> = new Set();
   showTree = false;
 
+  // Management State
+  activeTab: 'dashboard' | 'management' = 'dashboard';
+  services: ServiceInfo[] = [];
+  startupApps: StartupInfo[] = [];
+  managementSearchTerm = '';
+  mgmtSubTab: 'services' | 'startup' = 'services';
+
   ngOnInit() {
     this.interval = setInterval(() => {
       this.fetchStats();
+      if (this.activeTab === 'management') {
+        this.refreshManagementData();
+      }
     }, 1000);
   }
 
@@ -532,6 +554,65 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   toggleExpand(pid: number) {
     if (this.expandedParents.has(pid)) this.expandedParents.delete(pid);
     else this.expandedParents.add(pid);
+  }
+
+  // --- Management Methods ---
+
+  setActiveTab(tab: 'dashboard' | 'management') {
+    this.activeTab = tab;
+    if (tab === 'management') {
+      this.refreshManagementData();
+    }
+  }
+
+  setMgmtSubTab(subTab: 'services' | 'startup') {
+    this.mgmtSubTab = subTab;
+  }
+
+  async refreshManagementData() {
+    try {
+      if (this.mgmtSubTab === 'services') {
+        this.services = await invoke<ServiceInfo[]>('get_services');
+      } else {
+        this.startupApps = await invoke<StartupInfo[]>('get_startup_apps');
+      }
+    } catch (e) {
+      console.error("Failed to fetch management data", e);
+    }
+  }
+
+  get filteredServices() {
+    if (!this.managementSearchTerm) return this.services;
+    const term = this.managementSearchTerm.toLowerCase();
+    return this.services.filter(s =>
+      s.name.toLowerCase().includes(term) ||
+      s.display_name.toLowerCase().includes(term)
+    );
+  }
+
+  get filteredStartupApps() {
+    if (!this.managementSearchTerm) return this.startupApps;
+    const term = this.managementSearchTerm.toLowerCase();
+    return this.startupApps.filter(a =>
+      a.name.toLowerCase().includes(term) ||
+      a.command.toLowerCase().includes(term)
+    );
+  }
+
+  async toggleService(service: ServiceInfo) {
+    const action = service.status === 'Running' ? 'stop' : 'start';
+    try {
+      await invoke('control_service', { name: service.name, action });
+      // Powerhell RunAs is async in terms of the window opening, 
+      // so we just wait a bit and refresh
+      setTimeout(() => this.refreshManagementData(), 1000);
+    } catch (e) {
+      alert("Failed to control service: " + e);
+    }
+  }
+
+  onMgmtSearch(event: any) {
+    this.managementSearchTerm = event.target.value;
   }
 
   updateAppUsageList() {

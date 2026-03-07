@@ -21,6 +21,20 @@ struct ProcessInfo {
 }
 
 #[derive(Serialize)]
+struct ServiceInfo {
+    name: String,
+    display_name: String,
+    status: String,
+}
+
+#[derive(Serialize)]
+struct StartupInfo {
+    name: String,
+    command: String,
+    location: String,
+}
+
+#[derive(Serialize)]
 struct SystemStats {
     cpu_usage: f32,
     cpu_cores: usize,
@@ -107,7 +121,7 @@ fn get_system_stats(state: State<'_, AppState>) -> SystemStats {
 
     let components = Components::new_with_refreshed_list();
     let mut cpu_temp = None;
-    let mut battery_level = None;
+    let battery_level = None;
     let mut gpu_name = "N/A".to_string();
 
     for c in &components {
@@ -279,6 +293,102 @@ fn kill_process(state: State<'_, AppState>, pid: u32) -> Result<(), String> {
     }
 }
 
+#[tauri::command]
+fn get_services() -> Vec<ServiceInfo> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        let output = Command::new("powershell")
+            .args(&[
+                "-Command",
+                "Get-Service | Select-Object Name, DisplayName, Status | ConvertTo-Json",
+            ])
+            .output();
+
+        if let Ok(out) = output {
+            let s = String::from_utf8_lossy(&out.stdout);
+            if let Ok(services) = serde_json::from_str::<serde_json::Value>(&s) {
+                if let Some(arr) = services.as_array() {
+                    return arr
+                        .iter()
+                        .map(|v| ServiceInfo {
+                            name: v["Name"].as_str().unwrap_or("").to_string(),
+                            display_name: v["DisplayName"].as_str().unwrap_or("").to_string(),
+                            status: v["Status"]
+                                .as_i64()
+                                .map(|s| if s == 4 { "Running" } else { "Stopped" })
+                                .unwrap_or("Unknown")
+                                .to_string(),
+                        })
+                        .collect();
+                }
+            }
+        }
+    }
+    vec![]
+}
+
+#[tauri::command]
+fn control_service(name: String, action: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        let cmd = if action == "start" {
+            "Start-Service"
+        } else {
+            "Stop-Service"
+        };
+        let output = Command::new("powershell")
+            .args(&[
+                "-Command",
+                &format!(
+                    "Start-Process powershell -ArgumentList '-Command {} {}' -Verb RunAs",
+                    cmd, name
+                ),
+            ])
+            .output();
+
+        if output.is_ok() {
+            return Ok(());
+        }
+    }
+    Err("Failed to execute service control".to_string())
+}
+
+#[tauri::command]
+fn get_startup_apps() -> Vec<StartupInfo> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        let output = Command::new("powershell")
+            .args(&["-Command", "Get-CimInstance Win32_StartupCommand | Select-Object Name, Command, Location | ConvertTo-Json"])
+            .output();
+
+        if let Ok(out) = output {
+            let s = String::from_utf8_lossy(&out.stdout);
+            if let Ok(apps) = serde_json::from_str::<serde_json::Value>(&s) {
+                if let Some(arr) = apps.as_array() {
+                    return arr
+                        .iter()
+                        .map(|v| StartupInfo {
+                            name: v["Name"].as_str().unwrap_or("").to_string(),
+                            command: v["Command"].as_str().unwrap_or("").to_string(),
+                            location: v["Location"].as_str().unwrap_or("").to_string(),
+                        })
+                        .collect();
+                } else if let Some(obj) = apps.as_object() {
+                    return vec![StartupInfo {
+                        name: obj["Name"].as_str().unwrap_or("").to_string(),
+                        command: obj["Command"].as_str().unwrap_or("").to_string(),
+                        location: obj["Location"].as_str().unwrap_or("").to_string(),
+                    }];
+                }
+            }
+        }
+    }
+    vec![]
+}
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -298,7 +408,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             get_system_stats,
-            kill_process
+            kill_process,
+            get_services,
+            control_service,
+            get_startup_apps
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

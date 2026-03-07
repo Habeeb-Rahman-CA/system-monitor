@@ -107,6 +107,32 @@ h1 span {
   margin-left: 2px;
 }
 
+.main-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 1.5rem;
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--glass-border);
+}
+
+.main-tabs button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  transition: var(--transition);
+}
+
+.main-tabs button.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--primary);
+}
+
 .sys-meta {
   display: flex;
   align-items: center;
@@ -798,4 +824,108 @@ h3 {
   background: linear-gradient(90deg, var(--primary), var(--secondary));
   box-shadow: 0 0 10px var(--primary);
   transition: width 0.3s ease;
+}
+
+/* Management View Styling */
+.management-view {
+  padding: 0 1rem;
+}
+
+.management-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.management-tabs {
+  display: flex;
+  gap: 1rem;
+}
+
+.management-tabs button {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.management-tabs button.active {
+  background: var(--primary);
+  color: #000;
+  border-color: var(--primary);
+}
+
+.mgmt-card {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.mgmt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.mgmt-table th {
+  text-align: left;
+  color: var(--text-secondary);
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.mgmt-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.status-badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.status-badge.running {
+  background: rgba(0, 255, 136, 0.1);
+  color: #00ff88;
+  border: 1px solid rgba(0, 255, 136, 0.2);
+}
+
+.mgmt-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--primary);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: var(--transition);
+}
+
+.mgmt-btn.running {
+  color: #ff5e5e;
+}
+
+.mgmt-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.app-cmd code {
+  color: var(--secondary);
+  font-family: monospace;
+  font-size: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
 }
