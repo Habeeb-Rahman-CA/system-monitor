@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Vie
 import { CommonModule } from "@angular/common";
 import { invoke } from "@tauri-apps/api/core";
 import { Chart, registerables } from 'chart.js';
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window";
 
 const appWindow = getCurrentWindow();
 
@@ -152,6 +152,26 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     ram: 90,
     temp: 85,
     disk: 95
+  };
+
+  // Sidebar & Theme State
+  isDarkMode = true;
+  isMiniMode = false;
+  isAlwaysOnTop = false;
+  isSidebarCollapsed = false;
+
+  // Customizable Dashboard (Widget Visibility)
+  widgetVisibility = {
+    cpu: true,
+    cores: true,
+    ram: true,
+    gpu: true,
+    net: true,
+    disk: true,
+    conn: true,
+    usage: true,
+    info: true,
+    processes: true
   };
 
   ngOnInit() {
@@ -728,6 +748,44 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.managementSearchTerm = event.target.value;
     this.updateFilteredServices();
     this.updateFilteredStartupApps();
+  }
+
+  // --- UI/UX Power Features ---
+
+  toggleTheme() {
+    this.isDarkMode = !this.isDarkMode;
+    const body = document.documentElement;
+    if (this.isDarkMode) {
+      body.classList.remove('light-mode');
+    } else {
+      body.classList.add('light-mode');
+    }
+  }
+
+  toggleSidebar() {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+  }
+
+  async toggleAlwaysOnTop() {
+    this.isAlwaysOnTop = !this.isAlwaysOnTop;
+    await appWindow.setAlwaysOnTop(this.isAlwaysOnTop);
+  }
+
+  async toggleMiniMode() {
+    this.isMiniMode = !this.isMiniMode;
+    if (this.isMiniMode) {
+      // Switch to a small transparent overlay size
+      await appWindow.setSize(new PhysicalSize(300, 400));
+      await appWindow.setResizable(false);
+      this.activeTab = 'dashboard';
+    } else {
+      await appWindow.setSize(new PhysicalSize(1000, 800));
+      await appWindow.setResizable(true);
+    }
+  }
+
+  toggleWidget(widget: keyof typeof this.widgetVisibility) {
+    this.widgetVisibility[widget] = !this.widgetVisibility[widget];
   }
 
   private buildProcessTree(list: ProcessInfo[]): ProcessInfo[] {
