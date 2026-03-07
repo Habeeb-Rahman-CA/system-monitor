@@ -1,4 +1,18 @@
 <div class="dashboard-container">
+  <!-- Smart Alerts Overlay -->
+  <div class="alert-stack">
+    <div *ngFor="let alert of alerts" class="alert-box fade-in" [class]="alert.type">
+      <div class="alert-header">
+        <span class="alert-icon">{{ alert.type === 'critical' ? '🔴' : '🟡' }}</span>
+        <span class="alert-title">{{ alert.title }}</span>
+        <button class="dismiss-btn" (click)="dismissAlert(alert.id)">×</button>
+      </div>
+      <div class="alert-body">
+        {{ alert.message }}
+      </div>
+    </div>
+  </div>
+
   <div class="titlebar">
     <div data-tauri-drag-region class="drag-region"></div>
     <div class="titlebar-logo">🛰️</div>

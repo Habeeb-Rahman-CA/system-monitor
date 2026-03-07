@@ -8,6 +8,14 @@ const appWindow = getCurrentWindow();
 
 Chart.register(...registerables);
 
+interface Alert {
+  id: string;
+  type: 'warning' | 'critical' | 'info';
+  title: string;
+  message: string;
+  timestamp: number;
+}
+
 interface DiskInfo {
   name: string;
   total_space: number;
@@ -137,6 +145,15 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   p_filteredServices: ServiceInfo[] = [];
   p_filteredStartupApps: StartupInfo[] = [];
 
+  // Alerts State
+  alerts: Alert[] = [];
+  alertThresholds = {
+    cpu: 90,
+    ram: 90,
+    temp: 85,
+    disk: 95
+  };
+
   ngOnInit() {
     this.interval = setInterval(() => {
       this.fetchStats();
@@ -241,6 +258,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
       this.systemStats = stats;
       this.updateCaches();
+      this.checkAlerts(stats);
       this.cpuHistory.push(stats.cpu_usage);
       this.cpuHistory.shift();
       const memPct = (stats.memory_used / stats.memory_total) * 100;
@@ -613,6 +631,85 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   get filteredProcesses() {
     return this.p_filteredProcesses;
+  }
+
+  // --- Alert System ---
+
+  checkAlerts(stats: SystemStats) {
+    const newAlerts: Alert[] = [];
+
+    // 1. CPU Warning
+    if (stats.cpu_usage > this.alertThresholds.cpu) {
+      newAlerts.push({
+        id: 'cpu_high',
+        type: 'critical',
+        title: 'High CPU Usage',
+        message: `CPU is at ${stats.cpu_usage.toFixed(1)}%`,
+        timestamp: Date.now()
+      });
+    }
+
+    // 2. RAM Warning
+    const ramPct = (stats.memory_used / stats.memory_total) * 100;
+    if (ramPct > this.alertThresholds.ram) {
+      newAlerts.push({
+        id: 'ram_high',
+        type: 'critical',
+        title: 'Memory Almost Full',
+        message: `RAM usage is at ${ramPct.toFixed(1)}%`,
+        timestamp: Date.now()
+      });
+    }
+
+    // 3. Overheating
+    if (stats.cpu_temp && stats.cpu_temp > this.alertThresholds.temp) {
+      newAlerts.push({
+        id: 'temp_high',
+        type: 'critical',
+        title: 'Overheating Warning',
+        message: `CPU Temperature is dangerous: ${stats.cpu_temp.toFixed(1)}°C`,
+        timestamp: Date.now()
+      });
+    }
+
+    // 4. Disk Space
+    stats.disks.forEach(disk => {
+      const used = (disk.total_space - disk.available_space) / disk.total_space * 100;
+      if (used > this.alertThresholds.disk) {
+        newAlerts.push({
+          id: `disk_full_${disk.name}`,
+          type: 'warning',
+          title: 'Disk Almost Full',
+          message: `${disk.name} has only ${(disk.available_space / (1024 * 1024 * 1024)).toFixed(1)} GB left`,
+          timestamp: Date.now()
+        });
+      }
+    });
+
+    // 5. Internet Connection
+    if (stats.ping === null || stats.ping === 0) {
+      newAlerts.push({
+        id: 'internet_lost',
+        type: 'critical',
+        title: 'Connection Lost',
+        message: 'Unable to reach Google DNS (check network)',
+        timestamp: Date.now()
+      });
+    }
+
+    // Filter to keep only 5 most recent unique alerts
+    const uniqueIds = new Set();
+    this.alerts = [...newAlerts, ...this.alerts]
+      .filter(a => {
+        if (uniqueIds.has(a.id)) return false;
+        uniqueIds.add(a.id);
+        return true;
+      })
+      .slice(0, 5);
+  }
+
+  dismissAlert(id: string) {
+    this.alerts = this.alerts.filter(a => a.id !== id);
   }
 
   async toggleService(service: ServiceInfo) {
