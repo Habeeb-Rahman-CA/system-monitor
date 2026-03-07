@@ -11,10 +11,18 @@ interface DiskInfo {
   available_space: number;
 }
 
+interface ProcessInfo {
+  name: string;
+  pid: number;
+  cpu_usage: number;
+  memory: number;
+}
+
 interface SystemStats {
   cpu_usage: number;
   cpu_cores: number;
   cpus: number[];
+  cpu_temp: number | null;
   memory_used: number;
   memory_total: number;
   os_name: string;
@@ -23,6 +31,7 @@ interface SystemStats {
   disks: DiskInfo[];
   net_received: number;
   net_transmitted: number;
+  processes: ProcessInfo[];
 }
 
 @Component({

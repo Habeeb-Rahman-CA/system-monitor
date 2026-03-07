@@ -1,6 +1,6 @@
 use serde::Serialize;
 use std::sync::Mutex;
-use sysinfo::{Disks, Networks, System};
+use sysinfo::{Components, Disks, Networks, System};
 use tauri::State;
 
 #[derive(Serialize)]
@@ -11,10 +11,19 @@ struct DiskInfo {
 }
 
 #[derive(Serialize)]
+struct ProcessInfo {
+    name: String,
+    pid: u32,
+    cpu_usage: f32,
+    memory: u64,
+}
+
+#[derive(Serialize)]
 struct SystemStats {
     cpu_usage: f32,
     cpu_cores: usize,
     cpus: Vec<f32>,
+    cpu_temp: Option<f32>,
     memory_used: u64,
     memory_total: u64,
     os_name: String,
@@ -23,6 +32,7 @@ struct SystemStats {
     disks: Vec<DiskInfo>,
     net_received: u64,
     net_transmitted: u64,
+    processes: Vec<ProcessInfo>,
 }
 
 pub struct AppState {
@@ -67,10 +77,43 @@ fn get_system_stats(state: State<'_, AppState>) -> SystemStats {
 
     let cpus: Vec<f32> = sys.cpus().iter().map(|cpu| cpu.cpu_usage()).collect();
 
+    let components = Components::new_with_refreshed_list();
+    let mut cpu_temp = None;
+    for c in &components {
+        let label = c.label().to_lowercase();
+        if label.contains("cpu") || label.contains("package") || label.contains("core") {
+            cpu_temp = c.temperature();
+            break;
+        }
+    }
+
+    // Processes metrics
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+
+    let mut processes: Vec<ProcessInfo> = sys
+        .processes()
+        .iter()
+        .map(|(pid, process)| ProcessInfo {
+            name: process.name().to_string_lossy().into_owned(),
+            pid: pid.as_u32(),
+            cpu_usage: process.cpu_usage(),
+            memory: process.memory(),
+        })
+        .collect();
+
+    // Sort by CPU usage descending
+    processes.sort_by(|a, b| {
+        b.cpu_usage
+            .partial_cmp(&a.cpu_usage)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    processes.truncate(10);
+
     SystemStats {
         cpu_usage,
         cpu_cores,
         cpus,
+        cpu_temp,
         memory_used,
         memory_total,
         os_name,
@@ -79,6 +122,7 @@ fn get_system_stats(state: State<'_, AppState>) -> SystemStats {
         disks,
         net_received,
         net_transmitted,
+        processes,
     }
 }
 

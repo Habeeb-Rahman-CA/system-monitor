@@ -25,7 +25,10 @@
       <div class="card-header">
         <span class="icon">⚡</span>
         <h3>CPU History</h3>
-        <span class="percentage">{{ systemStats.cpu_usage.toFixed(1) }}%</span>
+        <div class="header-values">
+          <span class="temp-badge" *ngIf="systemStats.cpu_temp !== null">{{ systemStats.cpu_temp.toFixed(0) }}°C</span>
+          <span class="percentage">{{ systemStats.cpu_usage.toFixed(1) }}%</span>
+        </div>
       </div>
       <div class="chart-container">
         <canvas #cpuCanvas></canvas>
@@ -107,6 +110,34 @@
             {{ formatBytes(disk.total_space - disk.available_space) }} used of {{ formatBytes(disk.total_space) }}
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Processes Card -->
+    <div class="stat-card processes-card fade-in">
+      <div class="card-header">
+        <span class="icon">🚀</span>
+        <h3>Top Processes</h3>
+      </div>
+      <div class="process-list">
+        <table>
+          <thead>
+            <tr>
+              <th>Process</th>
+              <th>PID</th>
+              <th>CPU%</th>
+              <th>Memory</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let proc of systemStats.processes">
+              <td class="proc-name">{{ proc.name }}</td>
+              <td class="proc-pid">{{ proc.pid }}</td>
+              <td class="proc-cpu">{{ proc.cpu_usage.toFixed(1) }}%</td>
+              <td class="proc-mem">{{ formatBytes(proc.memory) }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 

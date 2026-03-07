@@ -126,6 +126,23 @@ h1 {
   margin-bottom: 1.25rem;
 }
 
+.header-values {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.temp-badge {
+  background: linear-gradient(135deg, rgba(255, 79, 79, 0.2), rgba(255, 79, 79, 0.4));
+  border: 1px solid rgba(255, 79, 79, 0.3);
+  color: #ff4f4f;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 h3 {
   margin: 0;
   font-size: 1.1rem;
@@ -287,6 +304,55 @@ h3 {
   background: linear-gradient(90deg, var(--primary), var(--secondary));
   transition: width 0.5s ease;
   box-shadow: 0 0 10px var(--primary);
+}
+
+/* Processes Card Specifics */
+.processes-card {
+  grid-column: 1 / -1;
+}
+
+.process-list table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.process-list th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.process-list td {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.process-list tr:last-child td {
+  border-bottom: none;
+}
+
+.proc-name {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.proc-pid {
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.proc-cpu {
+  color: var(--primary);
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.proc-mem {
+  color: var(--text-secondary);
+  font-family: monospace;
 }
 
 .live-indicator {
