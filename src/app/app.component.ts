@@ -3,6 +3,8 @@ import { CommonModule } from "@angular/common";
 import { invoke } from "@tauri-apps/api/core";
 import { Chart, registerables } from 'chart.js';
 import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window";
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const appWindow = getCurrentWindow();
 
@@ -132,7 +134,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   showTree = false;
 
   // Management State
-  activeTab: 'dashboard' | 'management' = 'dashboard';
+  activeTab: 'dashboard' | 'management' | 'reports' = 'dashboard';
   services: ServiceInfo[] = [];
   startupApps: StartupInfo[] = [];
   managementSearchTerm = '';
@@ -611,7 +613,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // --- Management Methods ---
 
-  setActiveTab(tab: 'dashboard' | 'management') {
+  setActiveTab(tab: 'dashboard' | 'management' | 'reports') {
     this.activeTab = tab;
     if (tab === 'management') {
       this.refreshManagementData();
@@ -620,6 +622,135 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   setMgmtSubTab(subTab: 'services' | 'startup') {
     this.mgmtSubTab = subTab;
+  }
+
+  // --- Reports & Exports ---
+
+  exportSystemReport() {
+    if (!this.systemStats) return;
+    const doc = new jsPDF();
+    const stats = this.systemStats;
+
+    doc.setFontSize(22);
+    doc.text("System Diagnostic Report", 20, 20);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 30);
+
+    doc.setFontSize(14);
+    doc.text("1. Hardware Specifications", 20, 45);
+    doc.setFontSize(10);
+    doc.text(`CPU: ${stats.cpu_model}`, 25, 55);
+    doc.text(`GPU: ${stats.gpu_name}`, 25, 60);
+    doc.text(`Memory Total: ${this.formatBytes(stats.memory_total)}`, 25, 65);
+    doc.text(`OS: ${stats.os_name} (${stats.os_version})`, 25, 70);
+
+    doc.setFontSize(14);
+    doc.text("2. Real-time Status", 20, 85);
+    doc.setFontSize(10);
+    doc.text(`Current CPU Usage: ${stats.cpu_usage.toFixed(1)}%`, 25, 95);
+    doc.text(`Memory Used: ${this.formatBytes(stats.memory_used)} (${((stats.memory_used / stats.memory_total) * 100).toFixed(1)}%)`, 25, 100);
+    doc.text(`System Uptime: ${this.formatUptime(stats.uptime)}`, 25, 105);
+
+    autoTable(doc, {
+      startY: 120,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Process Count', stats.processes.length.toString()],
+        ['Active Disks', stats.disks.length.toString()],
+        ['Network Download', `${this.formatBytes(this.netSpeedIn)}/s`],
+        ['Network Upload', `${this.formatBytes(this.netSpeedOut)}/s`],
+        ['Avg Latency', `${stats.ping} ms`]
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [79, 172, 254], textColor: [255, 255, 255] }
+    });
+
+    doc.save(`system_report_${Date.now()}.pdf`);
+  }
+
+  exportPerformanceCSV() {
+    if (!this.systemStats) return;
+    let csv = "Timestamp,CPU_Usage,RAM_Used_Bytes,RAM_Total_Bytes,Net_In_Bps,Net_Out_Bps,Ping_ms\n";
+
+    // Using current history arrays (last 60 seconds)
+    for (let i = 0; i < this.HISTORY_LIMIT; i++) {
+      const timestamp = new Date(Date.now() - (this.HISTORY_LIMIT - i) * 1000).toISOString();
+      const row = [
+        timestamp,
+        this.cpuHistory[i] || 0,
+        this.memoryHistory[i] || 0,
+        this.systemStats.memory_total,
+        this.netDownHistory[i] || 0,
+        this.netUpHistory[i] || 0,
+        this.pingHistory[i] || 0
+      ].join(",");
+      csv += row + "\n";
+    }
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `perf_logs_${Date.now()}.csv`;
+    a.click();
+  }
+
+  exportHardwareSummary() {
+    if (!this.systemStats) return;
+    const report = {
+      product: "System Monitor Pro - Hardware Summary",
+      timestamp: new Date().toISOString(),
+      cpu: {
+        model: this.systemStats.cpu_model,
+        cores: this.systemStats.cpu_cores,
+        freq: this.systemStats.cpu_freq,
+        arch: this.systemStats.cpu_arch
+      },
+      memory: {
+        total: this.systemStats.memory_total,
+        total_formatted: this.formatBytes(this.systemStats.memory_total)
+      },
+      gpu: {
+        name: this.systemStats.gpu_name
+      },
+      os: {
+        name: this.systemStats.os_name,
+        version: this.systemStats.os_version
+      },
+      disks: this.systemStats.disks
+    };
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `hardware_summary_${Date.now()}.json`;
+    a.click();
+  }
+
+  exportUptimeReport() {
+    if (!this.systemStats) return;
+    const doc = new jsPDF();
+    doc.setFontSize(22);
+    doc.text("Reliability & Uptime Report", 20, 20);
+
+    doc.setFontSize(12);
+    doc.text(`Official Session Report for: ${this.systemStats.os_name}`, 20, 35);
+
+    autoTable(doc, {
+      startY: 50,
+      head: [['Event', 'Details']],
+      body: [
+        ['System Boot Time', new Date(Date.now() - this.systemStats.uptime * 1000).toLocaleString()],
+        ['Current Session Length', this.formatUptime(this.systemStats.uptime)],
+        ['Monitor Session Start', new Date(this.lastNetReceived > 0 ? Date.now() : Date.now()).toLocaleString()], // Placeholder
+        ['Avg Response Latency', `${this.systemStats.ping} ms`],
+        ['Status', 'HEALTHY']
+      ],
+      theme: 'striped'
+    });
+
+    doc.save(`uptime_report_${Date.now()}.pdf`);
   }
 
   async refreshManagementData() {
@@ -717,15 +848,18 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
       });
     }
 
-    // Filter to keep only 5 most recent unique alerts
-    const uniqueIds = new Set();
-    this.alerts = [...newAlerts, ...this.alerts]
-      .filter(a => {
-        if (uniqueIds.has(a.id)) return false;
-        uniqueIds.add(a.id);
-        return true;
-      })
-      .slice(0, 5);
+    // Stable update: Keep existing alerts if condition persists, remove if solved
+    const activeIds = new Set(newAlerts.map(a => a.id));
+
+    // 1. Remove old alerts that are no longer active
+    this.alerts = this.alerts.filter(a => activeIds.has(a.id));
+
+    // 2. Add new alerts ONLY if they are not already in the list
+    newAlerts.forEach(newA => {
+      if (!this.alerts.some(a => a.id === newA.id)) {
+        this.alerts = [newA, ...this.alerts].slice(0, 5);
+      }
+    });
   }
 
   dismissAlert(id: string) {

@@ -56,6 +56,10 @@
         <span class="nav-icon">⚙️</span>
         <span class="nav-label" *ngIf="!isSidebarCollapsed">Management</span>
       </button>
+      <button class="nav-item" [class.active]="activeTab === 'reports'" (click)="setActiveTab('reports')">
+        <span class="nav-icon">📄</span>
+        <span class="nav-label" *ngIf="!isSidebarCollapsed">Reports</span>
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -369,6 +373,49 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </section>
+    <!-- Reports View -->
+    <section class="reports-view" [class.hidden]="activeTab !== 'reports'">
+      <div class="reports-header">
+        <h2>📑 Export & Reporting Center</h2>
+        <p>Professional diagnostics and session logging</p>
+      </div>
+
+      <div class="reports-grid">
+        <div class="report-card fade-in">
+          <div class="report-icon">📄</div>
+          <h3>System Diagnostic</h3>
+          <p>Comprehensive PDF report of current hardware and performance status.</p>
+          <button class="export-btn" (click)="exportSystemReport()">Export PDF</button>
+        </div>
+
+        <div class="report-card fade-in">
+          <div class="report-icon">📊</div>
+          <h3>Performance Logs</h3>
+          <p>Download the last 60 seconds of telemetry data in CSV format.</p>
+          <button class="export-btn" (click)="exportPerformanceCSV()">Save CSV</button>
+        </div>
+
+        <div class="report-card fade-in">
+          <div class="report-icon">🧾</div>
+          <h3>Hardware Summary</h3>
+          <p>Detailed technical specification of all detected system components.</p>
+          <button class="export-btn" (click)="exportHardwareSummary()">Export JSON</button>
+        </div>
+
+        <div class="report-card fade-in">
+          <div class="report-icon">🕓</div>
+          <h3>Reliability Report</h3>
+          <p>Focuses on uptime, boot times, and connection stability metrics.</p>
+          <button class="export-btn" (click)="exportUptimeReport()">Export PDF</button>
+        </div>
+      </div>
+
+      <div class="reports-footer">
+        <div class="info-note">
+          💡 <strong>Tip:</strong> Logs are cleared when the application is closed. Export before exiting.
         </div>
       </div>
     </section>

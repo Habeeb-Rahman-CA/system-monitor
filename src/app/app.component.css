@@ -7,6 +7,10 @@
   transition: background 0.5s ease;
 }
 
+.hidden {
+  display: none !important;
+}
+
 /* Sidebar Styling */
 .sidebar {
   width: 240px;
@@ -27,19 +31,28 @@
 }
 
 .sidebar-header {
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 1rem;
   border-bottom: 1px solid var(--glass-border);
   margin-bottom: 1rem;
+  height: 60px;
+}
+
+.sidebar-header .logo {
+  font-size: 1.2rem;
+  flex-shrink: 0;
 }
 
 .sidebar-header h2 {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   letter-spacing: 2px;
   color: var(--primary);
   margin: 0;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .sidebar-nav {
@@ -115,6 +128,43 @@
   display: flex;
   justify-content: flex-end;
   margin-bottom: 1.5rem;
+  padding-top: 10px;
+}
+
+.sys-meta {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.meta-label {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.meta-value {
+  font-size: 0.8rem;
+  color: var(--primary);
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #00ff88;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #00ff88;
 }
 
 /* Dashboard Grid */
@@ -173,12 +223,14 @@
 }
 
 .titlebar-text {
-  flex-grow: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-secondary);
-  letter-spacing: 1px;
-  text-align: center;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   pointer-events: none;
 }
 
@@ -1029,4 +1081,138 @@ h3 {
   font-size: 0.75rem;
   color: var(--text-secondary);
   line-height: 1.4;
+}
+
+/* Reports View Styling */
+.reports-view {
+  padding: 0 1rem;
+}
+
+.reports-header {
+  margin-bottom: 2.5rem;
+  padding: 1rem 0;
+}
+
+.reports-header h2 {
+  color: #fff;
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+  font-weight: 800;
+}
+
+.reports-header p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  opacity: 0.8;
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding-bottom: 3rem;
+}
+
+.report-card {
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  padding: 2.5rem 1.5rem;
+  border-radius: 20px;
+  backdrop-filter: blur(25px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.report-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--primary);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.report-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--primary);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+}
+
+.report-card:hover::before {
+  opacity: 1;
+}
+
+.report-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+  background: rgba(79, 172, 254, 0.1);
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  border: 1px solid rgba(79, 172, 254, 0.2);
+  color: var(--primary);
+}
+
+.report-card h3 {
+  color: #fff;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.report-card p {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+  flex-grow: 1;
+}
+
+.export-btn {
+  background: linear-gradient(135deg, var(--primary), #3b82f6);
+  color: #fff;
+  border: none;
+  padding: 0.85rem 2rem;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.8rem;
+}
+
+.export-btn:hover {
+  filter: brightness(1.2);
+  box-shadow: 0 0 20px rgba(79, 172, 254, 0.4);
+  transform: scale(1.02);
+}
+
+.reports-footer {
+  margin-top: 2rem;
+  padding: 2rem 0;
+}
+
+.info-note {
+  background: rgba(255, 204, 0, 0.05);
+  border-left: 4px solid #ffcc00;
+  padding: 1.25rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
