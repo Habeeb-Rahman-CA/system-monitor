@@ -267,6 +267,9 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   apiHeadersList: { key: string, value: string }[] = [{ key: 'Content-Type', value: 'application/json' }];
   isLoadingApi = false;
   isSavingApi = false;
+  isSaveModalOpen = false;
+  saveRequestName = '';
+  editingRequestId: string | null = null;
   apiCollectionName = '';
   isLoadingPorts = false;
   isLoadingServers = false;
@@ -1374,12 +1377,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   async saveToCollection() {
-    if (!this.apiCollectionName) {
-      const name = prompt("Enter a name for this request:");
-      if (!name) return;
-      this.apiCollectionName = name;
-    }
-
     this.isSavingApi = true;
 
     // Sync headers
@@ -1390,7 +1387,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.currentApiRequest.headers = headers;
 
     const saved: SavedApiRequest = {
-      id: Math.random().toString(36).substring(7),
+      id: this.editingRequestId || Math.random().toString(36).substring(7),
       name: this.apiCollectionName,
       request: { ...this.currentApiRequest }
     };
@@ -1398,7 +1395,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     try {
       await invoke('save_api_request', { request: saved });
       await this.loadApiCollections();
-      this.apiCollectionName = '';
+      this.editingRequestId = saved.id; // Keep the ID for next saves
     } catch (e) {
       alert("Failed to save request: " + e);
     } finally {
@@ -1409,11 +1406,32 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   loadFromCollection(item: SavedApiRequest) {
     this.currentApiRequest = { ...item.request };
+    this.editingRequestId = item.id;
+    this.apiCollectionName = item.name;
     this.apiHeadersList = Object.entries(item.request.headers).map(([key, value]) => ({ key, value }));
     if (this.apiHeadersList.length === 0) this.apiHeadersList.push({ key: '', value: '' });
     this.activeTab = 'dev';
     this.devSubTab = 'api';
     this.cdr.markForCheck();
+  }
+
+  showSaveApiModal() {
+    this.saveRequestName = this.apiCollectionName || '';
+    this.isSaveModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  closeSaveApiModal() {
+    this.isSaveModalOpen = false;
+    this.saveRequestName = '';
+    this.cdr.markForCheck();
+  }
+
+  async confirmSaveApiRequest() {
+    if (!this.saveRequestName.trim()) return;
+    this.apiCollectionName = this.saveRequestName;
+    this.isSaveModalOpen = false;
+    await this.saveToCollection();
   }
 
   async deleteFromCollection(id: string, event: Event) {
@@ -1903,6 +1921,7 @@ Provide only the bullet points, no preamble.`;
   trackByName(index: number, item: { name: string }) { return item.name; }
   trackByCommand(index: number, item: StartupInfo) { return item.command; }
   trackByIndex(index: number) { return index; }
+  trackById(index: number, item: any) { return item.id; }
   trackByKey(index: number, item: any) { return item.key || index; }
 
   // Diagnostics for the user

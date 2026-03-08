@@ -2702,3 +2702,158 @@ h3 {
     transform: translateY(0);
   }
 }
+
+/* ── Modal Overlay ─────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.fluent-modal {
+  background: var(--fluent-layer-1);
+  border: 1px solid var(--fluent-divider);
+  border-radius: 12px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: var(--shadow-64);
+  animation: modalScaleUp 0.3s var(--ease-decel);
+  overflow: hidden;
+}
+
+@keyframes modalScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--fluent-divider);
+}
+
+.modal-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  transition: background 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.modal-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+.fluent-input {
+  background: var(--fluent-layer-2);
+  border: 1px solid var(--fluent-stroke);
+  border-bottom: 2px solid var(--fluent-stroke);
+  padding: 0.6rem 0.85rem;
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.fluent-input:focus {
+  outline: none;
+  border-bottom-color: var(--primary);
+  background: var(--fluent-layer-3);
+}
+
+.modal-footer {
+  padding: 1.25rem 1.5rem;
+  background: rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  border-top: 1px solid var(--fluent-divider);
+}
+
+.fluent-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.fluent-btn.primary {
+  background: var(--primary);
+  color: #000;
+  border: none;
+}
+
+.fluent-btn.primary:hover {
+  background: var(--primary-hover);
+}
+
+.fluent-btn.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fluent-btn.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  border-color: var(--fluent-divider);
+}
+
+.fluent-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
