@@ -1,4 +1,4 @@
-<div class="dashboard-container" [class.mini-mode]="isMiniMode" [class.light-mode]="!isDarkMode">
+<div class="dashboard-container" [class.mini-mode]="isMiniMode">
   <!-- Smart Alerts Overlay -->
   <div class="alert-stack">
     <div *ngFor="let alert of alerts" class="alert-box fade-in" [class]="alert.type">
@@ -17,22 +17,22 @@
     <div data-tauri-drag-region class="drag-region"></div>
     <div class="titlebar-logo">🛰️</div>
     <div class="titlebar-text" data-tauri-drag-region>{{ isMiniMode ? 'SYSMON' : 'System Monitor Pro' }}</div>
-    <div class="window-controls" data-tauri-drag-region="false">
+    <div class="window-controls">
       <div class="window-button mini-toggle" (click)="toggleMiniMode()" [class.active]="isMiniMode"
         title="Mini Overlay">🪟</div>
       <div class="window-button pin-toggle" (click)="toggleAlwaysOnTop()" [class.active]="isAlwaysOnTop"
         title="Always on Top">📌</div>
-      <div class="window-button minimize" (click)="minimizeWindow()" data-tauri-drag-region="false">
+      <div class="window-button minimize" (click)="minimizeWindow()">
         <svg width="12" height="12" viewBox="0 0 12 12">
           <rect fill="currentColor" x="2" y="5.5" width="8" height="1"></rect>
         </svg>
       </div>
-      <div class="window-button maximize" (click)="toggleMaximize()" data-tauri-drag-region="false">
+      <div class="window-button maximize" (click)="toggleMaximize()">
         <svg width="12" height="12" viewBox="0 0 12 12">
           <rect fill="none" stroke="currentColor" x="2.5" y="2.5" width="7" height="7"></rect>
         </svg>
       </div>
-      <div class="window-button close" (click)="closeWindow()" data-tauri-drag-region="false">
+      <div class="window-button close" (click)="closeWindow()">
         <svg width="12" height="12" viewBox="0 0 12 12">
           <path fill="currentColor" d="M10.5 1.5l-9 9m0-9l9 9" stroke="currentColor" stroke-width="1.2"></path>
         </svg>
@@ -44,7 +44,17 @@
     <div class="sidebar-header">
       <div class="logo">🛰️</div>
       <h2 *ngIf="!isSidebarCollapsed">SYSMON</h2>
-      <button class="collapse-btn" (click)="toggleSidebar()">{{ isSidebarCollapsed ? '→' : '←' }}</button>
+      <button class="collapse-btn" (click)="toggleSidebar()" [class.collapsed]="isSidebarCollapsed"
+        title="Toggle Sidebar">
+        <svg class="hamburger-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <line class="hb-line hb-top" x1="2" y1="4" x2="16" y2="4" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" />
+          <line class="hb-line hb-mid" x1="2" y1="9" x2="16" y2="9" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" />
+          <line class="hb-line hb-bottom" x1="2" y1="14" x2="16" y2="14" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" />
+        </svg>
+      </button>
     </div>
 
     <nav class="sidebar-nav">
