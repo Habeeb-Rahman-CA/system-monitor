@@ -205,16 +205,7 @@ system-monitor/
 | `control_service` | Start or stop a Windows service by name |
 | `get_startup_apps` | Reads startup entries from the Windows Registry |
 
----
 
-## 🎯 Roadmap
-
-- [ ] Multi-monitor support
-- [ ] Historical data persistence
-- [ ] Custom alert thresholds UI
-- [ ] Plugin system for custom widgets
-- [ ] macOS & Linux support
-- [ ] System tray integration
 
 ---
 
