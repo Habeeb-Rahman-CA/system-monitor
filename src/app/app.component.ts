@@ -110,6 +110,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   systemStats: SystemStats | null = null;
   interval: any;
+  appStartTime = Date.now();
 
   cpuChart: Chart | null = null;
   memoryChart: Chart | null = null;
@@ -616,6 +617,42 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   }
 
+  private async robustDownload(content: string | Blob, fileName: string, type: string) {
+    try {
+      console.log(`Starting native export via Rust: ${fileName}`);
+
+      let base64Data: string;
+
+      if (content instanceof Blob) {
+        // Convert Blob to Base64 for Rust transfer
+        const arrayBuffer = await content.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        base64Data = btoa(binary);
+      } else {
+        // String content (CSV/JSON/Text)
+        base64Data = btoa(unescape(encodeURIComponent(content)));
+      }
+
+      const savedPath = await invoke<string>('save_export', {
+        filename: fileName,
+        base64Content: base64Data
+      });
+
+      console.log(`File saved natively at: ${savedPath}`);
+      return true;
+    } catch (e) {
+      console.error("Native export failed", e);
+      // Fallback alert with details if Rust bridge fails
+      alert("Native Export Error: " + e);
+      return false;
+    }
+  }
+
   // --- Process Management Methods ---
 
   toggleFavorite(pid: number) {
@@ -676,131 +713,217 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // --- Reports & Exports ---
 
-  exportSystemReport() {
+  async exportSystemReport() {
     if (!this.systemStats) return;
-    const doc = new jsPDF();
-    const stats = this.systemStats;
+    try {
+      const doc = new jsPDF();
+      const stats = this.systemStats;
 
-    doc.setFontSize(22);
-    doc.text("System Diagnostic Report", 20, 20);
-    doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 30);
+      // Header with Fluent Accent
+      doc.setFillColor(96, 205, 255);
+      doc.rect(0, 0, 210, 40, 'F');
 
-    doc.setFontSize(14);
-    doc.text("1. Hardware Specifications", 20, 45);
-    doc.setFontSize(10);
-    doc.text(`CPU: ${stats.cpu_model}`, 25, 55);
-    doc.text(`GPU: ${stats.gpu_name}`, 25, 60);
-    doc.text(`Memory Total: ${this.formatBytes(stats.memory_total)}`, 25, 65);
-    doc.text(`OS: ${stats.os_name} (${stats.os_version})`, 25, 70);
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont("helvetica", "bold");
+      doc.text("System Diagnostic Report", 20, 25);
 
-    doc.setFontSize(14);
-    doc.text("2. Real-time Status", 20, 85);
-    doc.setFontSize(10);
-    doc.text(`Current CPU Usage: ${stats.cpu_usage.toFixed(1)}%`, 25, 95);
-    doc.text(`Memory Used: ${this.formatBytes(stats.memory_used)} (${((stats.memory_used / stats.memory_total) * 100).toFixed(1)}%)`, 25, 100);
-    doc.text(`System Uptime: ${this.formatUptime(stats.uptime)}`, 25, 105);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 34);
 
-    autoTable(doc, {
-      startY: 120,
-      head: [['Metric', 'Value']],
-      body: [
-        ['Process Count', stats.processes.length.toString()],
-        ['Active Disks', stats.disks.length.toString()],
-        ['Network Download', `${this.formatBytes(this.netSpeedIn)}/s`],
-        ['Network Upload', `${this.formatBytes(this.netSpeedOut)}/s`],
-        ['Avg Latency', `${stats.ping} ms`]
-      ],
-      theme: 'grid',
-      headStyles: { fillColor: [79, 172, 254], textColor: [255, 255, 255] }
-    });
+      // Section 1: Hardware
+      doc.setTextColor(32, 32, 32);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("1. Hardware Specifications", 20, 55);
 
-    doc.save(`system_report_${Date.now()}.pdf`);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      const hwData = [
+        ["Component", "Model / Value"],
+        ["CPU", stats.cpu_model],
+        ["Architecture", stats.cpu_arch],
+        ["Physical Cores", stats.physical_cores.toString()],
+        ["Logical Cores", stats.cpu_cores.toString()],
+        ["Total Memory", this.formatBytes(stats.memory_total)],
+        ["GPU", stats.gpu_name],
+        ["OS", `${stats.os_name} ${stats.os_version}`],
+        ["System Uptime", this.formatUptime(stats.uptime)]
+      ];
+
+      autoTable(doc, {
+        startY: 60,
+        head: [hwData[0]],
+        body: hwData.slice(1),
+        theme: 'striped',
+        headStyles: { fillColor: [64, 64, 64] }
+      });
+
+      // Section 2: Storage
+      let finalY = (doc as any).lastAutoTable?.finalY || 150;
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("2. Storage Status", 20, finalY + 15);
+
+      const diskData = stats.disks.map(d => [
+        d.name,
+        d.kind,
+        this.formatBytes(d.total_space),
+        this.formatBytes(d.available_space),
+        `${((1 - d.available_space / d.total_space) * 100).toFixed(1)}%`
+      ]);
+
+      autoTable(doc, {
+        startY: finalY + 20,
+        head: [['Drive', 'Type', 'Total Capacity', 'Available', 'Usage %']],
+        body: diskData,
+        theme: 'grid'
+      });
+
+      // Section 3: Performance Snapshot
+      finalY = (doc as any).lastAutoTable?.finalY || finalY + 100;
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("3. Current Load Snapshot", 20, finalY + 15);
+
+      autoTable(doc, {
+        startY: finalY + 20,
+        head: [['Metric', 'Current Value']],
+        body: [
+          ['Overall CPU Load', `${stats.cpu_usage.toFixed(1)}%`],
+          ['Memory Consumption', `${this.formatBytes(stats.memory_used)} (${((stats.memory_used / stats.memory_total) * 100).toFixed(1)}%)`],
+          ['Disk Read Speed', `${this.formatBytes(stats.disk_read_speed)}/s`],
+          ['Disk Write Speed', `${this.formatBytes(stats.disk_write_speed)}/s`],
+          ['Network Download', `${this.formatBytes(this.netSpeedIn)}/s`],
+          ['Network Upload', `${this.formatBytes(this.netSpeedOut)}/s`],
+          ['Network Latency', `${stats.ping} ms`]
+        ],
+        theme: 'plain'
+      });
+
+      const blob = doc.output('blob');
+      await this.robustDownload(blob, `System_Diagnostic_${Date.now()}.pdf`, 'application/pdf');
+    } catch (e) {
+      alert("Critical error in PDF Generation: " + e);
+    }
   }
 
-  exportPerformanceCSV() {
+  async exportPerformanceCSV() {
     if (!this.systemStats) return;
-    let csv = "Timestamp,CPU_Usage,RAM_Used_Bytes,RAM_Total_Bytes,Net_In_Bps,Net_Out_Bps,Ping_ms\n";
+    try {
+      const stats = this.systemStats;
+      let csv = "Timestamp,OS,CPU_Model,CPU_Usage_Pct,RAM_Used_Bytes,RAM_Total_Bytes,Net_Down_Bps,Net_Up_Bps,Ping_ms,Disk_Read_Bps,Disk_Write_Bps\n";
 
-    // Using current history arrays (last 60 seconds)
-    for (let i = 0; i < this.HISTORY_LIMIT; i++) {
-      const timestamp = new Date(Date.now() - (this.HISTORY_LIMIT - i) * 1000).toISOString();
-      const row = [
-        timestamp,
-        this.cpuHistory[i] || 0,
-        this.memoryHistory[i] || 0,
-        this.systemStats.memory_total,
-        this.netDownHistory[i] || 0,
-        this.netUpHistory[i] || 0,
-        this.pingHistory[i] || 0
-      ].join(",");
-      csv += row + "\n";
+      for (let i = 0; i < this.HISTORY_LIMIT; i++) {
+        const timestamp = new Date(Date.now() - (this.HISTORY_LIMIT - i) * 1000).toISOString();
+        const row = [
+          timestamp,
+          `"${stats.os_name}"`,
+          `"${stats.cpu_model}"`,
+          (this.cpuHistory[i] || 0).toFixed(2),
+          this.memoryHistory[i] ? (this.memoryHistory[i] * stats.memory_total / 100).toFixed(0) : 0,
+          stats.memory_total,
+          (this.netDownHistory[i] || 0).toFixed(0),
+          (this.netUpHistory[i] || 0).toFixed(0),
+          (this.pingHistory[i] || 0).toFixed(0),
+          (this.diskReadHistory[i] || 0).toFixed(0),
+          (this.diskWriteHistory[i] || 0).toFixed(0)
+        ].join(",");
+        csv += row + "\n";
+      }
+
+      await this.robustDownload(csv, `Performance_Telemetry_${Date.now()}.csv`, 'text/csv');
+    } catch (e) {
+      alert("CSV Export failed: " + e);
     }
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `perf_logs_${Date.now()}.csv`;
-    a.click();
   }
 
   exportHardwareSummary() {
     if (!this.systemStats) return;
-    const report = {
-      product: "System Monitor Pro - Hardware Summary",
-      timestamp: new Date().toISOString(),
-      cpu: {
-        model: this.systemStats.cpu_model,
-        cores: this.systemStats.cpu_cores,
-        freq: this.systemStats.cpu_freq,
-        arch: this.systemStats.cpu_arch
-      },
-      memory: {
-        total: this.systemStats.memory_total,
-        total_formatted: this.formatBytes(this.systemStats.memory_total)
-      },
-      gpu: {
-        name: this.systemStats.gpu_name
-      },
-      os: {
-        name: this.systemStats.os_name,
-        version: this.systemStats.os_version
-      },
-      disks: this.systemStats.disks
-    };
+    try {
+      const stats = this.systemStats;
+      const report = {
+        report_type: "Hardware & Performance Summary",
+        generated_at: new Date().toISOString(),
+        system_info: {
+          os: stats.os_name,
+          os_version: stats.os_version,
+          uptime_seconds: stats.uptime,
+          boot_time: new Date(Date.now() - stats.uptime * 1000).toISOString()
+        },
+        processor: {
+          model: stats.cpu_model,
+          architecture: stats.cpu_arch,
+          logical_cores: stats.cpu_cores,
+          physical_cores: stats.physical_cores,
+          base_frequency_mhz: stats.cpu_freq
+        },
+        memory: {
+          total_bytes: stats.memory_total,
+          total_formatted: this.formatBytes(stats.memory_total)
+        },
+        graphics: {
+          renderer: stats.gpu_name,
+          vram_total_bytes: stats.vram_total
+        },
+        storage: stats.disks.map(d => ({
+          label: d.name,
+          type: d.kind,
+          total_capacity: d.total_space,
+          available: d.available_space
+        })),
+        current_snapshot: {
+          cpu_load: stats.cpu_usage,
+          memory_used: stats.memory_used,
+          ping: stats.ping,
+          wifi_signal: stats.wifi_signal
+        }
+      };
 
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `hardware_summary_${Date.now()}.json`;
-    a.click();
+      this.robustDownload(JSON.stringify(report, null, 2), `Hardware_Summary_${Date.now()}.json`, 'application/json');
+    } catch (e) {
+      alert("JSON Export failed: " + e);
+    }
   }
 
   exportUptimeReport() {
     if (!this.systemStats) return;
-    const doc = new jsPDF();
-    doc.setFontSize(22);
-    doc.text("Reliability & Uptime Report", 20, 20);
+    try {
+      const doc = new jsPDF();
+      const stats = this.systemStats;
 
-    doc.setFontSize(12);
-    doc.text(`Official Session Report for: ${this.systemStats.os_name}`, 20, 35);
+      doc.setFillColor(0, 120, 212); // Windows Blue
+      doc.rect(0, 0, 210, 35, 'F');
 
-    autoTable(doc, {
-      startY: 50,
-      head: [['Event', 'Details']],
-      body: [
-        ['System Boot Time', new Date(Date.now() - this.systemStats.uptime * 1000).toLocaleString()],
-        ['Current Session Length', this.formatUptime(this.systemStats.uptime)],
-        ['Monitor Session Start', new Date(this.lastNetReceived > 0 ? Date.now() : Date.now()).toLocaleString()], // Placeholder
-        ['Avg Response Latency', `${this.systemStats.ping} ms`],
-        ['Status', 'HEALTHY']
-      ],
-      theme: 'striped'
-    });
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.text("Reliability & Uptime Report", 20, 22);
 
-    doc.save(`uptime_report_${Date.now()}.pdf`);
+      doc.setTextColor(40, 40, 40);
+      doc.setFontSize(12);
+      doc.text(`Session Analysis for ${stats.os_name}`, 20, 45);
+
+      autoTable(doc, {
+        startY: 55,
+        head: [['Metric', 'Time / Value']],
+        body: [
+          ['Last Boot Time', new Date(Date.now() - stats.uptime * 1000).toLocaleString()],
+          ['Total System Uptime', this.formatUptime(stats.uptime)],
+          ['Monitor Session Start', new Date(this.appStartTime).toLocaleString()],
+          ['Monitor Session Duration', this.formatUptime(Math.floor((Date.now() - this.appStartTime) / 1000))],
+          ['Current Latency', `${stats.ping} ms`],
+          ['Session Health Status', this.advisorScore >= 80 ? 'HEALTHY' : 'NEEDS ATTENTION']
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [0, 120, 212] }
+      });
+
+      const blob = doc.output('blob');
+      this.robustDownload(blob, `Uptime_Report_${Date.now()}.pdf`, 'application/pdf');
+    } catch (e) {
+      alert("PDF Uptime Export failed: " + e);
+    }
   }
 
   async refreshManagementData() {
@@ -1390,4 +1513,10 @@ Provide only the bullet points, no preamble.`;
   trackByCommand(index: number, item: StartupInfo) { return item.command; }
   trackByIndex(index: number) { return index; }
   trackByKey(index: number, item: any) { return item.key; }
+
+  // Diagnostics for the user
+  async testExportTrigger() {
+    alert("Export logic initiated. Please check your Downloads/SystemMonitor_Exports folder.");
+    await this.robustDownload("Test content", "test.txt", "text/plain");
+  }
 }

@@ -1,7 +1,9 @@
 use serde::Serialize;
+use std::fs;
 use std::sync::{Arc, Mutex};
 use sysinfo::{Components, Disks, Networks, System};
 use tauri::{Manager, State};
+use tauri_plugin_opener::OpenerExt;
 
 #[derive(Serialize)]
 struct DiskInfo {
@@ -367,6 +369,41 @@ fn get_startup_apps() -> Vec<StartupInfo> {
 }
 
 #[tauri::command]
+async fn save_export(
+    app: tauri::AppHandle,
+    filename: String,
+    base64_content: String,
+) -> Result<String, String> {
+    // 1. Get Downloads Path
+    let mut path = app.path().download_dir().map_err(|e| e.to_string())?;
+    path.push("SystemMonitor_Exports");
+
+    // 2. Create Directory
+    if !path.exists() {
+        fs::create_dir_all(&path).map_err(|e| e.to_string())?;
+    }
+
+    // 3. Prepare File Path
+    path.push(&filename);
+
+    // 4. Decode and Write
+    // Note: We use base64 to avoid encoding issues between JS and Rust
+    use base64::{engine::general_purpose, Engine as _};
+    let data = general_purpose::STANDARD
+        .decode(base64_content)
+        .map_err(|e| format!("Decode error: {}", e))?;
+
+    fs::write(&path, data).map_err(|e| e.to_string())?;
+
+    // 5. Open the folder so user sees their success
+    let opener = app.opener();
+    let parent = path.parent().unwrap().to_path_buf();
+    let _ = opener.open_path(parent.to_string_lossy().to_string(), Option::<String>::None);
+
+    Ok(path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}!", name)
 }
@@ -417,7 +454,8 @@ pub fn run() {
             kill_process,
             get_services,
             control_service,
-            get_startup_apps
+            get_startup_apps,
+            save_export
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
