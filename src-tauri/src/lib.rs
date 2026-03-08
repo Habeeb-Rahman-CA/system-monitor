@@ -48,6 +48,34 @@ struct StartupInfo {
 }
 
 #[derive(Serialize)]
+struct DbServerInfo {
+    name: String,
+    port: u16,
+    status: String,
+    pid: Option<u32>,
+    uptime: u64,
+}
+
+#[derive(Serialize)]
+struct PkgManagerInfo {
+    name: String,
+    command: String,
+    cpu_usage: f32,
+    memory: u64,
+    pid: u32,
+    duration: u64,
+}
+
+#[derive(Serialize)]
+struct GitStatus {
+    branch: String,
+    uncommitted_changes: usize,
+    last_commit: String,
+    is_dirty: bool,
+    repo_name: String,
+}
+
+#[derive(Serialize)]
 struct PortInfo {
     port: u16,
     protocol: String,
@@ -668,6 +696,149 @@ async fn control_docker_container(id: String, action: String) -> Result<(), Stri
     Ok(())
 }
 
+#[tauri::command]
+async fn get_db_servers(state: State<'_, Arc<AppState>>) -> Result<Vec<DbServerInfo>, String> {
+    let mut db_servers = Vec::new();
+    let db_ports = vec![
+        (3306, "MySQL"),
+        (5432, "PostgreSQL"),
+        (27017, "MongoDB"),
+        (6379, "Redis"),
+        (1433, "SQL Server"),
+        (28015, "RethinkDB"),
+    ];
+
+    let mut sys = state.sys.lock().map_err(|e| e.to_string())?;
+    sys.refresh_all();
+
+    // Re-use active ports logic internally
+    use std::process::Command;
+    let output = Command::new("netstat")
+        .args(["-ano"])
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    for (port, name) in db_ports {
+        let pattern = format!(":{}", port);
+        let found = stdout
+            .lines()
+            .find(|l| l.contains(&pattern) && l.contains("LISTENING"));
+
+        if let Some(line) = found {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            let pid_str = parts.get(4).unwrap_or(&"");
+            let pid = pid_str.parse::<u32>().ok();
+
+            let uptime = if let Some(p) = pid {
+                sys.process(sysinfo::Pid::from(p as usize))
+                    .map(|proc| proc.run_time())
+                    .unwrap_or(0)
+            } else {
+                0
+            };
+
+            db_servers.push(DbServerInfo {
+                name: name.to_string(),
+                port,
+                status: "Running".to_string(),
+                pid,
+                uptime,
+            });
+        }
+    }
+
+    Ok(db_servers)
+}
+
+#[tauri::command]
+async fn get_pkg_managers(state: State<'_, Arc<AppState>>) -> Result<Vec<PkgManagerInfo>, String> {
+    let mut sys = state.sys.lock().map_err(|e| e.to_string())?;
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+
+    let pkg_keywords = vec!["npm", "yarn", "pip", "cargo", "pnpm", "bun"];
+    let mut managers = Vec::new();
+
+    for (pid, process) in sys.processes() {
+        let name = process.name().to_string_lossy().to_lowercase();
+        if pkg_keywords.iter().any(|k| name.contains(k)) {
+            let cmd = process
+                .cmd()
+                .iter()
+                .map(|s| s.to_string_lossy())
+                .collect::<Vec<_>>()
+                .join(" ");
+            // Only show if it looks like an install or build
+            if cmd.contains("install")
+                || cmd.contains("build")
+                || cmd.contains("add")
+                || cmd.contains("update")
+            {
+                managers.push(PkgManagerInfo {
+                    name: process.name().to_string_lossy().into_owned(),
+                    command: cmd,
+                    cpu_usage: process.cpu_usage(),
+                    memory: process.memory(),
+                    pid: pid.as_u32(),
+                    duration: process.run_time(),
+                });
+            }
+        }
+    }
+
+    Ok(managers)
+}
+
+#[tauri::command]
+async fn get_git_activity() -> Result<GitStatus, String> {
+    use std::process::Command;
+
+    // Attempt to get Git info for the current working directory
+    let output = Command::new("git")
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .output()
+        .map_err(|_| "Git not found or not a repository".to_string())?;
+
+    let branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+    let status_output = Command::new("git")
+        .args(["status", "--short"])
+        .output()
+        .map_err(|e| e.to_string())?;
+    let status_str = String::from_utf8_lossy(&status_output.stdout);
+    let changed_count = status_str.lines().count();
+
+    let log_output = Command::new("git")
+        .args(["log", "-1", "--pretty=%B"])
+        .output()
+        .map_err(|e| e.to_string())?;
+    let last_commit = String::from_utf8_lossy(&log_output.stdout)
+        .trim()
+        .to_string();
+
+    let repo_name = Command::new("git")
+        .args(["rev-parse", "--show-toplevel"])
+        .output()
+        .map_err(|e| e.to_string())?;
+    let repo_path = String::from_utf8_lossy(&repo_name.stdout)
+        .trim()
+        .to_string();
+    let repo_folder = std::path::Path::new(&repo_path)
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_string();
+
+    Ok(GitStatus {
+        branch,
+        uncommitted_changes: changed_count,
+        last_commit,
+        is_dirty: changed_count > 0,
+        repo_name: repo_folder,
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -720,7 +891,10 @@ pub fn run() {
             get_dev_servers,
             open_project_folder,
             get_docker_containers,
-            control_docker_container
+            control_docker_container,
+            get_db_servers,
+            get_pkg_managers,
+            get_git_activity
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

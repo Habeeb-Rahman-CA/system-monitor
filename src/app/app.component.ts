@@ -89,6 +89,31 @@ interface DockerContainer {
   ports: string;
 }
 
+interface DbServerInfo {
+  name: string;
+  port: number;
+  status: string;
+  pid: number | null;
+  uptime: number;
+}
+
+interface PkgManagerInfo {
+  name: string;
+  command: string;
+  cpu_usage: number;
+  memory: number;
+  pid: number;
+  duration: number;
+}
+
+interface GitStatus {
+  branch: string;
+  uncommitted_changes: number;
+  last_commit: string;
+  is_dirty: boolean;
+  repo_name: string;
+}
+
 type ProcessSortKey = 'name' | 'cpu_usage' | 'memory' | 'pid';
 
 interface SystemStats {
@@ -183,7 +208,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   lastMgmtRefresh = 0;
   isLoadingMgmt = false;
   mgmtSubTab: 'services' | 'startup' = 'services';
-  devSubTab: 'ports' | 'servers' | 'coding' | 'docker' = 'ports';
+  devSubTab: 'ports' | 'servers' | 'coding' | 'docker' | 'db' | 'pkg' | 'git' = 'ports';
   services: ServiceInfo[] = [];
   startupApps: StartupInfo[] = [];
   activePorts: PortInfo[] = [];
@@ -194,10 +219,18 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   p_filteredCodingProcesses: ProcessInfo[] = [];
   dockerContainers: DockerContainer[] = [];
   p_filteredDockerContainers: DockerContainer[] = [];
+  dbServers: DbServerInfo[] = [];
+  p_filteredDbServers: DbServerInfo[] = [];
+  pkgManagers: PkgManagerInfo[] = [];
+  p_filteredPkgManagers: PkgManagerInfo[] = [];
+  gitStatus: GitStatus | null = null;
   isLoadingPorts = false;
   isLoadingServers = false;
   isLoadingCoding = false;
   isLoadingDocker = false;
+  isLoadingDb = false;
+  isLoadingPkg = false;
+  isLoadingGit = false;
   lastPortsRefresh = 0;
   managementSearchTerm = '';
 
@@ -1002,7 +1035,8 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   async refreshDevData() {
-    if (this.isLoadingPorts || this.isLoadingServers || this.isLoadingCoding || this.isLoadingDocker) return;
+    if (this.isLoadingPorts || this.isLoadingServers || this.isLoadingCoding || this.isLoadingDocker ||
+      this.isLoadingDb || this.isLoadingPkg || this.isLoadingGit) return;
     try {
       if (this.devSubTab === 'ports') {
         this.isLoadingPorts = true;
@@ -1025,6 +1059,17 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.isLoadingDocker = true;
         this.dockerContainers = await invoke<DockerContainer[]>('get_docker_containers');
         this.updateFilteredDockerContainers();
+      } else if (this.devSubTab === 'db') {
+        this.isLoadingDb = true;
+        this.dbServers = await invoke<DbServerInfo[]>('get_db_servers');
+        this.updateFilteredDbServers();
+      } else if (this.devSubTab === 'pkg') {
+        this.isLoadingPkg = true;
+        this.pkgManagers = await invoke<PkgManagerInfo[]>('get_pkg_managers');
+        this.updateFilteredPkgManagers();
+      } else if (this.devSubTab === 'git') {
+        this.isLoadingGit = true;
+        this.gitStatus = await invoke<GitStatus>('get_git_activity');
       }
       this.lastPortsRefresh = Date.now();
     } catch (e) {
@@ -1034,7 +1079,32 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.isLoadingServers = false;
       this.isLoadingCoding = false;
       this.isLoadingDocker = false;
+      this.isLoadingDb = false;
+      this.isLoadingPkg = false;
+      this.isLoadingGit = false;
       this.cdr.markForCheck();
+    }
+  }
+
+  updateFilteredDbServers() {
+    if (!this.managementSearchTerm) {
+      this.p_filteredDbServers = [...this.dbServers];
+    } else {
+      const term = this.managementSearchTerm.toLowerCase();
+      this.p_filteredDbServers = this.dbServers.filter(s =>
+        s.name.toLowerCase().includes(term) || s.port.toString().includes(term)
+      );
+    }
+  }
+
+  updateFilteredPkgManagers() {
+    if (!this.managementSearchTerm) {
+      this.p_filteredPkgManagers = [...this.pkgManagers];
+    } else {
+      const term = this.managementSearchTerm.toLowerCase();
+      this.p_filteredPkgManagers = this.pkgManagers.filter(p =>
+        p.name.toLowerCase().includes(term) || p.command.toLowerCase().includes(term)
+      );
     }
   }
 
@@ -1195,9 +1265,11 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.updateFilteredDevServers();
     this.updateFilteredCodingProcesses();
     this.updateFilteredDockerContainers();
+    this.updateFilteredDbServers();
+    this.updateFilteredPkgManagers();
   }
 
-  setDevSubTab(tab: 'ports' | 'servers' | 'coding' | 'docker') {
+  setDevSubTab(tab: 'ports' | 'servers' | 'coding' | 'docker' | 'db' | 'pkg' | 'git') {
     this.devSubTab = tab;
     this.refreshDevData();
   }
@@ -1673,11 +1745,11 @@ Provide only the bullet points, no preamble.`;
   // --- TrackBy Functions for Performance ---
   trackByAlert(index: number, item: Alert) { return item.id; }
   trackByAdvice(index: number, item: Advice) { return item.id; }
-  trackByPid(index: number, item: ProcessInfo) { return item.pid; }
+  trackByPid(index: number, item: { pid: number }) { return item.pid; }
   trackByName(index: number, item: { name: string }) { return item.name; }
   trackByCommand(index: number, item: StartupInfo) { return item.command; }
   trackByIndex(index: number) { return index; }
-  trackByKey(index: number, item: any) { return item.key; }
+  trackByKey(index: number, item: any) { return item.key || index; }
 
   // Diagnostics for the user
   async testExportTrigger() {

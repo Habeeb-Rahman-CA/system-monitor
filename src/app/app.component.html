@@ -572,12 +572,15 @@
         <button [class.active]="devSubTab === 'servers'" (click)="setDevSubTab('servers')">Localhost Servers</button>
         <button [class.active]="devSubTab === 'coding'" (click)="setDevSubTab('coding')">Coding Procs</button>
         <button [class.active]="devSubTab === 'docker'" (click)="setDevSubTab('docker')">Docker</button>
+        <button [class.active]="devSubTab === 'db'" (click)="setDevSubTab('db')">Databases</button>
+        <button [class.active]="devSubTab === 'pkg'" (click)="setDevSubTab('pkg')">Pkg Managers</button>
+        <button [class.active]="devSubTab === 'git'" (click)="setDevSubTab('git')">Git</button>
       </div>
 
       <div class="management-controls">
         <div class="search-box">
           <i class="ri-search-line"></i>
-          <input type="text" placeholder="Filter ports, servers, or containers..." [ngModel]="managementSearchTerm"
+          <input type="text" placeholder="Filter dev tools..." [ngModel]="managementSearchTerm"
             (input)="onMgmtSearch($event)">
         </div>
       </div>
@@ -732,12 +735,102 @@
           </table>
         </div>
 
-        <div class="loading-overlay" *ngIf="isLoadingPorts || isLoadingServers || isLoadingCoding || isLoadingDocker"
+        <!-- Database Servers Table -->
+        <div *ngIf="devSubTab === 'db' && !isLoadingDb">
+          <table class="mgmt-table">
+            <thead>
+              <tr>
+                <th>Database</th>
+                <th>Port</th>
+                <th>Status</th>
+                <th>PID</th>
+                <th>Uptime</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let db of p_filteredDbServers; trackBy: trackByKey">
+                <td class="primary-text"><strong>{{ db.name }}</strong></td>
+                <td>{{ db.port }}</td>
+                <td><span class="status-badge running">{{ db.status }}</span></td>
+                <td>{{ db.pid }}</td>
+                <td>{{ formatDuration(db.uptime) }}</td>
+              </tr>
+              <tr *ngIf="p_filteredDbServers.length === 0 && !isLoadingDb">
+                <td colspan="5" class="empty-state" style="text-align: center; padding: 2rem;">No database servers
+                  detected
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Package Managers Table -->
+        <div *ngIf="devSubTab === 'pkg' && !isLoadingPkg">
+          <table class="mgmt-table">
+            <thead>
+              <tr>
+                <th>Process</th>
+                <th>Command</th>
+                <th>CPU%</th>
+                <th>RAM</th>
+                <th>Runtime</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let pkg of p_filteredPkgManagers; trackBy: trackByPid">
+                <td class="primary-text"><strong>{{ pkg.name }}</strong></td>
+                <td class="app-cmd"><code>{{ pkg.command }}</code></td>
+                <td>{{ pkg.cpu_usage.toFixed(1) }}%</td>
+                <td>{{ formatBytes(pkg.memory) }}</td>
+                <td>{{ formatDuration(pkg.duration) }}</td>
+              </tr>
+              <tr *ngIf="p_filteredPkgManagers.length === 0 && !isLoadingPkg">
+                <td colspan="5" class="empty-state" style="text-align: center; padding: 2rem;">No active package manager
+                  operations found</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Git Activity Panel -->
+        <div *ngIf="devSubTab === 'git' && !isLoadingGit">
+          <div class="git-panel" *ngIf="gitStatus">
+            <div class="git-header">
+              <div class="git-repo-name"><i class="ri-git-repository-line"></i> {{ gitStatus.repo_name }}</div>
+              <div class="git-status-badge" [class.dirty]="gitStatus.is_dirty">
+                {{ gitStatus.is_dirty ? 'Dirty' : 'Clean' }}
+              </div>
+            </div>
+            <div class="git-grid">
+              <div class="git-item">
+                <span class="label">Current Branch</span>
+                <span class="value"><i class="ri-git-branch-line"></i> {{ gitStatus.branch }}</span>
+              </div>
+              <div class="git-item">
+                <span class="label">Changes</span>
+                <span class="value">{{ gitStatus.uncommitted_changes }} files modified</span>
+              </div>
+            </div>
+            <div class="git-commit">
+              <span class="label">Last Commit Message</span>
+              <div class="commit-msg">"{{ gitStatus.last_commit }}"</div>
+            </div>
+          </div>
+          <div *ngIf="!gitStatus" class="empty-state" style="text-align: center; padding: 2rem;">
+            Failed to fetch Git status. Ensure this is a Git repository.
+          </div>
+        </div>
+
+        <div class="loading-overlay"
+          *ngIf="isLoadingPorts || isLoadingServers || isLoadingCoding || isLoadingDocker || isLoadingDb || isLoadingPkg || isLoadingGit"
           style="text-align: center; padding: 3rem;">
           <div class="spinner"></div>
           <p>{{ isLoadingPorts ? 'Scanning active ports...' :
             isLoadingServers ? 'Detecting development servers...' :
             isLoadingCoding ? 'Scanning coding processes...' :
+            isLoadingDb ? 'Detecting database servers...' :
+            isLoadingPkg ? 'Monitoring package managers...' :
+            isLoadingGit ? 'Fetching git activity...' :
             'Fetching Docker containers...' }}</p>
         </div>
       </div>
