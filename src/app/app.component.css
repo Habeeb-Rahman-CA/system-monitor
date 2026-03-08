@@ -3153,3 +3153,882 @@ h3 {
   font-weight: 600;
   color: var(--text-secondary);
 }
+
+/* ── Speedometer Gauges ────────────────────────────────── */
+.gauge-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gauge-svg {
+  width: 140px;
+  height: 140px;
+  transform: rotate(135deg);
+  /* Start at a visually pleasing angle */
+}
+
+.gauge-track {
+  fill: none;
+  stroke: var(--fluent-divider);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: 219.9;
+  /* Full circumference (C = 2 * PI * r) where r = 35 */
+  stroke-dashoffset: 55;
+  /* Leave ~75% track open */
+}
+
+.gauge-fill {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: 219.9;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.1, 0.7, 1.0, 0.1), stroke 0.3s;
+}
+
+/* Colors based on usage */
+.gauge-fill.warning {
+  stroke: var(--accent-yellow);
+}
+
+.gauge-fill.critical {
+  stroke: var(--accent-red);
+}
+
+.gauge-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.gauge-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: 'Segoe UI', monospace;
+  line-height: 1;
+}
+
+.gauge-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+.stat-card.gauge-card {
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  background: linear-gradient(180deg, var(--fluent-layer-2) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+
+.gauge-card .card-header {
+  width: 100%;
+  justify-content: center;
+  border-bottom: none;
+  margin-bottom: -0.5rem;
+  padding: 0;
+}
+
+.gauge-footer-stats {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--fluent-divider);
+  padding-top: 1rem;
+}
+
+.gauge-footer-stats span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gauge-footer-stats i {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.speed-summary {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.speed-summary span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── CPU Deep Insights ────────────────────────────────── */
+.cpu-details-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.cpu-badge {
+  background: var(--accent-subtle);
+  color: var(--primary);
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1px solid rgba(96, 205, 255, 0.2);
+}
+
+.cpu-insights-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.insight-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ins-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ins-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.ins-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.load-avg-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.load-pills {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.load-pill {
+  flex: 1;
+  background: var(--fluent-layer-3);
+  padding: 0.5rem;
+  border-radius: 6px;
+  text-align: center;
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border: 1px solid var(--fluent-stroke);
+}
+
+.load-pill.high {
+  background: rgba(255, 107, 107, 0.1);
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+.core-matrix-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.core-matrix {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(24px, 1fr));
+  gap: 4px;
+  background: var(--fluent-layer-3);
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--fluent-stroke);
+}
+
+.matrix-cell {
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.1s;
+}
+
+.matrix-cell:hover {
+  transform: scale(1.15);
+  z-index: 10;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.cell-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--primary);
+  opacity: 0.6;
+  transition: height 0.3s;
+}
+
+.cpu-footer {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--fluent-divider);
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* ── Memory Deep Insights ─────────────────────────────── */
+.memory-deep-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.mem-speed-badge {
+  background: rgba(108, 203, 95, 0.1);
+  color: var(--accent-green);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1px solid rgba(108, 203, 95, 0.2);
+}
+
+.mem-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.mem-segment-bar {
+  height: 12px;
+  background: var(--fluent-layer-3);
+  border-radius: 6px;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--fluent-stroke);
+}
+
+.seg {
+  height: 100%;
+  transition: width 0.5s var(--ease-decel);
+}
+
+.seg.used {
+  background: var(--accent-green);
+  opacity: 0.9;
+}
+
+.seg.cached {
+  background: var(--primary);
+  opacity: 0.6;
+}
+
+.seg.free {
+  background: var(--fluent-divider);
+}
+
+.mem-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.leg-dot.used {
+  background: var(--accent-green);
+}
+
+.leg-dot.cached {
+  background: var(--primary);
+}
+
+.leg-dot.free {
+  background: var(--text-tertiary);
+}
+
+.leg-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.swap-section {
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  border: 1px solid var(--fluent-divider);
+}
+
+.swap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.swap-bar {
+  height: 4px;
+  background: var(--fluent-layer-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.swap-fill {
+  height: 100%;
+  background: var(--accent-blue);
+  opacity: 0.7;
+  transition: width 0.5s;
+}
+
+.mem-data-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.mem-data-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mem-data-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+}
+
+.mem-data-val {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ── Disk Performance Panel ──────────────────────────── */
+.disk-perf-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.disk-io-velocity {
+  display: flex;
+  gap: 1rem;
+}
+
+.velocity-item {
+  flex: 1;
+  background: var(--fluent-layer-3);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--fluent-stroke);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.velocity-item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  background: var(--primary);
+  opacity: 0.3;
+}
+
+.velocity-item.read::after {
+  background: var(--accent-blue);
+}
+
+.velocity-item.write::after {
+  background: var(--accent-yellow);
+}
+
+.vel-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.vel-val {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.partition-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.partition-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--fluent-divider);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.part-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.part-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.part-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.part-type {
+  font-size: 0.65rem;
+  color: var(--accent-yellow);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.part-usage-text {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.part-bar-container {
+  height: 6px;
+  background: var(--fluent-layer-3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.part-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.part-fill.high {
+  background: var(--accent-red);
+}
+
+.part-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+}
+
+.disk-health-badge {
+  background: rgba(108, 203, 95, 0.1);
+  color: var(--accent-green);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+/* ── GPU Deep Monitoring ─────────────────────────────── */
+.gpu-deep-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.gpu-type-badge {
+  background: rgba(255, 107, 107, 0.1);
+  color: var(--accent-red);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.gpu-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.gpu-stat-box {
+  background: var(--fluent-layer-3);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--fluent-divider);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gpu-stat-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.gpu-stat-val {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.vram-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(255, 107, 107, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent-red);
+}
+
+.vram-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vram-bar-container {
+  height: 6px;
+  background: var(--fluent-layer-3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.vram-fill {
+  height: 100%;
+  background: var(--accent-red);
+  opacity: 0.8;
+  transition: width 0.5s;
+}
+
+.gpu-clock-badge {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Hardware Sensors Panel ──────────────────────────── */
+.sensors-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.sensors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sensor-item {
+  background: var(--fluent-layer-3);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--fluent-divider);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.sensor-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--primary);
+}
+
+.sensor-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sensor-icon {
+  font-size: 1.2rem;
+  color: var(--primary);
+}
+
+.sensor-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.sensor-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sensor-category {
+  font-size: 0.6rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sensor-reading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.sensor-val {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.sensor-val.hot {
+  color: var(--accent-red);
+}
+
+.sensor-val.warm {
+  color: var(--accent-yellow);
+}
+
+.sensor-limit {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+}
+
+.sensor-bar-mini {
+  width: 100%;
+  height: 2px;
+  background: var(--fluent-divider);
+  margin-top: 4px;
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.sensor-fill-mini {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.3s;
+}
+
+.sensor-fill-mini.hot {
+  background: var(--accent-red);
+}
+
+/* ── Network Deep Monitor ────────────────────────────── */
+.net-deep-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.net-transfer-grid {
+  display: flex;
+  gap: 1rem;
+}
+
+.transfer-item {
+  flex: 1;
+  background: var(--fluent-layer-3);
+  padding: 1.25rem;
+  border-radius: 10px;
+  border: 1px solid var(--fluent-divider);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.transfer-item.down {
+  border-left: 4px solid var(--accent-blue);
+}
+
+.transfer-item.up {
+  border-left: 4px solid var(--accent-yellow);
+}
+
+.trans-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.trans-val {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.trans-total {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.net-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.net-info-box {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--fluent-divider);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.info-val {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.wifi-strength-container {
+  padding: 1rem;
+  background: var(--fluent-layer-3);
+  border-radius: 8px;
+  border: 1px solid var(--fluent-divider);
+}
+
+.wifi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.wifi-bar-set {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
+}
+
+.wifi-bar {
+  width: 4px;
+  background: var(--fluent-divider);
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+.wifi-bar.active {
+  background: var(--primary);
+}
+
+.wifi-bar.strong {
+  background: var(--accent-green);
+}
+
+.wifi-bar:nth-child(1) {
+  height: 6px;
+}
+
+.wifi-bar:nth-child(2) {
+  height: 10px;
+}
+
+.wifi-bar:nth-child(3) {
+  height: 14px;
+}
+
+.wifi-bar:nth-child(4) {
+  height: 18px;
+}
+
+.pub-ip-btn {
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: all 0.2s;
+}
+
+.pub-ip-btn:hover {
+  background: var(--primary);
+  color: #000;
+}

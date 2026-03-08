@@ -37,6 +37,13 @@ interface DiskInfo {
   kind: string;
 }
 
+interface ComponentInfo {
+  label: string;
+  temp: number | null;
+  max_temp: number | null;
+  critical_temp: number | null;
+}
+
 interface ServiceInfo {
   name: string;
   display_name: string;
@@ -165,6 +172,9 @@ interface SystemStats {
   processes: ProcessInfo[];
   gpu_name: string;
   gpu_usage: number;
+  gpu_temp: number | null;
+  gpu_clock: number | null;
+  gpu_fan_speed: number | null;
   vram_used: number;
   vram_total: number;
   battery_level: number | null;
@@ -172,6 +182,14 @@ interface SystemStats {
   disk_write_speed: number;
   ping: number;
   wifi_signal: number;
+  load_average: number[];
+  memory_free: number;
+  memory_available: number;
+  swap_total: number;
+  swap_used: number;
+  sensors: ComponentInfo[];
+  local_ip: string;
+  active_connections: number;
 }
 
 @Component({
@@ -2048,5 +2066,10 @@ Provide only the bullet points, no preamble.`;
   async testExportTrigger() {
     alert("Export logic initiated. Please check your Downloads/SystemMonitor_Exports folder.");
     await this.robustDownload("Test content", "test.txt", "text/plain");
+  }
+  getCoreColor(usage: number): string {
+    if (usage > 85) return 'rgba(255, 107, 107, 0.2)';
+    if (usage > 60) return 'rgba(252, 225, 0, 0.15)';
+    return 'rgba(255, 255, 255, 0.05)';
   }
 }

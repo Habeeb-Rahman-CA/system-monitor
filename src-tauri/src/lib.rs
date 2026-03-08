@@ -14,6 +14,14 @@ struct DiskInfo {
 }
 
 #[derive(Serialize)]
+struct ComponentInfo {
+    label: String,
+    temp: Option<f32>,
+    max_temp: Option<f32>,
+    critical_temp: Option<f32>,
+}
+
+#[derive(Serialize)]
 struct ProcessInfo {
     name: String,
     pid: u32,
@@ -125,6 +133,9 @@ struct SystemStats {
     processes: Vec<ProcessInfo>,
     gpu_name: String,
     gpu_usage: f32,
+    gpu_temp: Option<f32>,
+    gpu_clock: Option<u32>,
+    gpu_fan_speed: Option<u32>,
     vram_used: u64,
     vram_total: u64,
     battery_level: Option<f32>,
@@ -132,6 +143,14 @@ struct SystemStats {
     disk_write_speed: u64,
     ping: u32,
     wifi_signal: u32,
+    load_average: [f64; 3],
+    memory_free: u64,
+    memory_available: u64,
+    swap_total: u64,
+    swap_used: u64,
+    sensors: Vec<ComponentInfo>,
+    local_ip: String,
+    active_connections: usize,
 }
 
 pub struct AppState {
@@ -232,18 +251,39 @@ fn get_system_stats(state: State<'_, Arc<AppState>>) -> SystemStats {
 
     let cpus: Vec<f32> = sys.cpus().iter().map(|cpu| cpu.cpu_usage()).collect();
 
-    // 5. Collect temp/gpu from CACHE
+    // 5. Collect temp/gpu/sensors from CACHE
     let mut cpu_temp = None;
     let mut gpu_name = "N/A".to_string();
+    let mut gpu_temp = None;
+    let mut gpu_fan_speed = None;
+    let mut sensors = Vec::new();
+
     for c in state.components.lock().unwrap().iter() {
         let label = c.label().to_lowercase();
+        let temp = c.temperature();
+
+        sensors.push(ComponentInfo {
+            label: c.label().to_string(),
+            temp: c.temperature(),
+            max_temp: c.max(),
+            critical_temp: c.critical(),
+        });
+
         if cpu_temp.is_none() && (label.contains("cpu") || label.contains("package")) {
-            cpu_temp = c.temperature();
+            cpu_temp = temp;
         }
-        if (label.contains("gpu") || label.contains("nvidia") || label.contains("amd"))
-            && gpu_name == "N/A"
-        {
-            gpu_name = c.label().to_string();
+
+        let is_gpu = label.contains("gpu") || label.contains("nvidia") || label.contains("amd");
+        if is_gpu {
+            if gpu_name == "N/A" {
+                gpu_name = c.label().to_string();
+            }
+            if gpu_temp.is_none() {
+                gpu_temp = temp;
+            }
+            if label.contains("fan") {
+                gpu_fan_speed = temp.map(|v| v as u32);
+            }
         }
     }
 
@@ -307,7 +347,10 @@ fn get_system_stats(state: State<'_, Arc<AppState>>) -> SystemStats {
         net_transmitted,
         processes,
         gpu_name,
-        gpu_usage: 0.0,
+        gpu_usage: 0.0, // This is often updated by a background process or simulated
+        gpu_temp,
+        gpu_clock: None, // Hard to get cross-platform without specialized crates
+        gpu_fan_speed,
         vram_used: 0,
         vram_total: 0,
         battery_level: None,
@@ -315,6 +358,20 @@ fn get_system_stats(state: State<'_, Arc<AppState>>) -> SystemStats {
         disk_write_speed,
         ping: *state.ping.lock().unwrap(),
         wifi_signal: *state.wifi_signal.lock().unwrap(),
+        load_average: [
+            System::load_average().one,
+            System::load_average().five,
+            System::load_average().fifteen,
+        ],
+        memory_free: sys.free_memory(),
+        memory_available: sys.available_memory(),
+        swap_total: sys.total_swap(),
+        swap_used: sys.used_swap(),
+        sensors,
+        local_ip: local_ip_address::local_ip()
+            .map(|ip| ip.to_string())
+            .unwrap_or_else(|_| "Unknown".to_string()),
+        active_connections: sys.processes().len(), // Fallback or estimate
     }
 }
 

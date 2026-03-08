@@ -259,53 +259,132 @@
     <!-- Dashboard View -->
     <section class="dashboard-view" [class.hidden]="activeTab !== 'dashboard'">
       <div class="dashboard-grid" *ngIf="systemStats">
-        <!-- CPU Card -->
-        <div class="stat-card cpu-card fade-in" *ngIf="widgetVisibility.cpu">
+        <!-- CPU Gauge Card -->
+        <div class="stat-card gauge-card fade-in" *ngIf="widgetVisibility.cpu">
           <div class="card-header">
-            <span class="icon"><i class="ri-cpu-line"></i></span>
-            <h3>CPU</h3>
-            <div class="header-values">
-              <span class="temp-badge" *ngIf="systemStats.cpu_temp !== null">{{ systemStats.cpu_temp.toFixed(0)
-                }}°C</span>
-              <span class="percentage">{{ systemStats.cpu_usage.toFixed(1) }}%</span>
+            <span class="icon" [style.color]="'#60CDFF'"><i class="ri-cpu-line"></i></span>
+            <h3>CPU Load</h3>
+          </div>
+          <div class="gauge-container">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle class="gauge-track" cx="50" cy="50" r="35" />
+              <circle class="gauge-fill" cx="50" cy="50" r="35" [class.warning]="systemStats.cpu_usage > 70"
+                [class.critical]="systemStats.cpu_usage > 90"
+                [style.stroke-dashoffset]="219.9 - (164.9 * systemStats.cpu_usage / 100)" />
+            </svg>
+            <div class="gauge-center">
+              <span class="gauge-value">{{ systemStats.cpu_usage.toFixed(0) }}%</span>
+              <span class="gauge-label">Usage</span>
             </div>
           </div>
-          <div class="chart-container">
-            <canvas #cpuCanvas></canvas>
+          <div class="gauge-footer-stats">
+            <span *ngIf="systemStats.cpu_temp !== null"><i class="ri-temp-hot-line"></i> {{
+              systemStats.cpu_temp.toFixed(0) }}°C</span>
+            <span><i class="ri-speed-up-line"></i> {{ systemStats.cpu_model.split(' ')[0] }}</span>
           </div>
         </div>
 
-        <!-- Per-Core Grid -->
-        <div class="stat-card cores-card fade-in" *ngIf="widgetVisibility.cores">
+        <!-- CPU Deep Insights Card -->
+        <div class="stat-card cpu-details-card fade-in" *ngIf="widgetVisibility.cpu">
           <div class="card-header">
-            <span class="icon"><i class="ri-server-line"></i></span>
-            <h3>Per-Core Activity</h3>
+            <span class="icon" [style.color]="'#60CDFF'"><i class="ri-pulse-line"></i></span>
+            <h3>Deep Insights</h3>
+            <span class="cpu-badge">{{ (systemStats.cpu_freq / 1000).toFixed(2) }} GHz</span>
           </div>
-          <div class="cores-grid">
-            <div class="core-mini-card" *ngFor="let usage of systemStats.cpus; let i = index; trackBy: trackByIndex">
-              <div class="core-header">
-                <span class="core-label">C{{ i }}</span>
-                <span class="core-value">{{ usage.toFixed(0) }}%</span>
+
+          <div class="cpu-insights-body">
+            <div class="insight-row">
+              <div class="ins-item">
+                <span class="ins-label">LOGICAL CORES / THREADS</span>
+                <span class="ins-value">{{ systemStats.physical_cores }}C / {{ systemStats.cpu_cores }}T</span>
               </div>
-              <div class="core-chart">
-                <canvas #coreCanvas></canvas>
+              <div class="ins-item">
+                <span class="ins-label">CURRENT CLOCK</span>
+                <span class="ins-value">{{ (systemStats.cpu_freq / 1000).toFixed(2) }} GHz</span>
+              </div>
+            </div>
+
+            <div class="load-avg-section">
+              <span class="ins-label">LOAD AVERAGE (1m, 5m, 15m)</span>
+              <div class="load-pills">
+                <span class="load-pill" [class.high]="systemStats.load_average[0] > systemStats.cpu_cores">{{
+                  systemStats.load_average[0].toFixed(2) }}</span>
+                <span class="load-pill" [class.high]="systemStats.load_average[1] > systemStats.cpu_cores">{{
+                  systemStats.load_average[1].toFixed(2) }}</span>
+                <span class="load-pill" [class.high]="systemStats.load_average[2] > systemStats.cpu_cores">{{
+                  systemStats.load_average[2].toFixed(2) }}</span>
+              </div>
+            </div>
+
+            <div class="core-matrix-header">
+              <span class="ins-label">LOGICAL CORE UTILIZATION MATRIX</span>
+              <span class="ins-label">{{ systemStats.cpu_cores }} UNITS</span>
+            </div>
+            <div class="core-matrix">
+              <div class="matrix-cell" *ngFor="let usage of systemStats.cpus; let i = index"
+                [style.background]="getCoreColor(usage)" [title]="'Core ' + i + ': ' + usage.toFixed(1) + '%'">
+                <div class="cell-fill" [style.height.%]="usage"></div>
               </div>
             </div>
           </div>
+
+          <div class="cpu-footer">
+            <span><i class="ri-microchip-line"></i> {{ systemStats.cpu_arch.toUpperCase() }} Architecture</span>
+          </div>
         </div>
 
-        <!-- RAM Card -->
-        <div class="stat-card ram-card fade-in" *ngIf="widgetVisibility.ram">
+        <!-- Memory Deep Insights Card -->
+        <div class="stat-card memory-deep-card fade-in" *ngIf="widgetVisibility.ram">
           <div class="card-header">
-            <span class="icon"><i class="ri-ram-2-line"></i></span>
-            <h3>Memory History</h3>
-            <span class="percentage">{{ getMemoryPercentage().toFixed(1) }}%</span>
+            <span class="icon" [style.color]="'#6CCB5F'"><i class="ri-ram-2-line"></i></span>
+            <h3>Deep Memory Monitoring</h3>
+            <span class="mem-speed-badge" *ngIf="systemStats.cpu_freq > 0">DDR Sync</span>
           </div>
-          <div class="chart-container">
-            <canvas #memoryCanvas></canvas>
-          </div>
-          <div class="memory-details-compact">
-            <span>{{ formatBytes(systemStats.memory_used) }} / {{ formatBytes(systemStats.memory_total) }}</span>
+
+          <div class="mem-breakdown">
+            <div class="mem-segment-bar">
+              <div class="seg used" [style.width.%]="(systemStats.memory_used / systemStats.memory_total) * 100"></div>
+              <div class="seg cached"
+                [style.width.%]="((systemStats.memory_available - systemStats.memory_free) / systemStats.memory_total) * 100">
+              </div>
+              <div class="seg free" [style.width.%]="(systemStats.memory_free / systemStats.memory_total) * 100"></div>
+            </div>
+
+            <div class="mem-legend">
+              <div class="leg-item"><span class="leg-dot used"></span> <span class="leg-label">Used ({{
+                  formatBytes(systemStats.memory_used) }})</span></div>
+              <div class="leg-item"><span class="leg-dot cached"></span> <span class="leg-label">Cache ({{
+                  formatBytes(systemStats.memory_available - systemStats.memory_free) }})</span></div>
+              <div class="leg-item"><span class="leg-dot free"></span> <span class="leg-label">Free ({{
+                  formatBytes(systemStats.memory_free) }})</span></div>
+            </div>
+
+            <div class="mem-data-grid">
+              <div class="mem-data-item">
+                <span class="mem-data-label">HARDWARE TOTAL</span>
+                <span class="mem-data-val">{{ formatBytes(systemStats.memory_total) }}</span>
+              </div>
+              <div class="mem-data-item">
+                <span class="mem-data-label">COMMITTED</span>
+                <span class="mem-data-val">{{ formatBytes(systemStats.memory_used + systemStats.swap_used) }}</span>
+              </div>
+            </div>
+
+            <!-- Swap Performance -->
+            <div class="swap-section" *ngIf="systemStats.swap_total > 0">
+              <div class="swap-header">
+                <span class="ins-label">VIRTUAL MEMORY (SWAP)</span>
+                <span class="ins-label">{{ ((systemStats.swap_used / systemStats.swap_total) * 100).toFixed(0)
+                  }}%</span>
+              </div>
+              <div class="swap-bar">
+                <div class="swap-fill" [style.width.%]="(systemStats.swap_used / systemStats.swap_total) * 100"></div>
+              </div>
+              <div class="swap-header" style="margin-top: 4px; margin-bottom: 0;">
+                <span class="leg-label">{{ formatBytes(systemStats.swap_used) }} USED</span>
+                <span class="leg-label">{{ formatBytes(systemStats.swap_total) }} TOTAL</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -324,19 +403,58 @@
           </div>
         </div>
 
-        <!-- GPU Card -->
-        <div class="stat-card gpu-card fade-in" *ngIf="widgetVisibility.gpu">
+        <!-- GPU Deep Monitoring Card -->
+        <div class="stat-card gpu-deep-card fade-in" *ngIf="widgetVisibility.gpu">
           <div class="card-header">
-            <span class="icon"><i class="ri-gamepad-line"></i></span>
-            <h3>GPU Usage</h3>
-            <div class="header-values">
-              <span class="percentage">{{ systemStats.gpu_usage.toFixed(1) }}%</span>
+            <span class="icon" [style.color]="'#FF6B6B'"><i class="ri-gamepad-line"></i></span>
+            <h3>Discrete Graphics</h3>
+            <span class="gpu-type-badge">{{ systemStats.gpu_name.includes('NVIDIA') ? 'NVIDIA' :
+              (systemStats.gpu_name.includes('AMD') ? 'AMD' : 'Integrated') }}</span>
+          </div>
+
+          <div class="gpu-stats-grid">
+            <div class="gpu-stat-box">
+              <span class="gpu-stat-label">GPU LOAD</span>
+              <span class="gpu-stat-val">{{ systemStats.gpu_usage.toFixed(0) }}%</span>
+            </div>
+            <div class="gpu-stat-box">
+              <span class="gpu-stat-label">TEMPERATURE</span>
+              <span class="gpu-stat-val" [class.critical]="(systemStats.gpu_temp || 0) > 85">{{ systemStats.gpu_temp ?
+                systemStats.gpu_temp.toFixed(0) + '°C' : 'N/A' }}</span>
+            </div>
+            <div class="gpu-stat-box">
+              <span class="gpu-stat-label">CLOCK SPEED</span>
+              <span class="gpu-stat-val">{{ systemStats.gpu_clock ? systemStats.gpu_clock + ' MHz' : 'Dynamic' }}</span>
+            </div>
+            <div class="gpu-stat-box">
+              <span class="gpu-stat-label">FAN SPEED</span>
+              <span class="gpu-stat-val">{{ systemStats.gpu_fan_speed ? systemStats.gpu_fan_speed + ' RPM' : 'Auto'
+                }}</span>
             </div>
           </div>
-          <div class="chart-container">
-            <canvas #gpuCanvas></canvas>
+
+          <!-- Video Memory Dashboard -->
+          <div class="vram-section">
+            <div class="vram-header">
+              <span class="ins-label">DEDICATED VRAM</span>
+              <span class="ins-label" *ngIf="systemStats.vram_total > 0">{{ ((systemStats.vram_used /
+                systemStats.vram_total) * 100).toFixed(1) }}%</span>
+            </div>
+            <div class="vram-bar-container" *ngIf="systemStats.vram_total > 0">
+              <div class="vram-fill" [style.width.%]="(systemStats.vram_used / systemStats.vram_total) * 100"></div>
+            </div>
+            <div class="vram-header" style="margin-top: 2px;">
+              <span class="leg-label">{{ formatBytes(systemStats.vram_used) }} USED</span>
+              <span class="leg-label">{{ formatBytes(systemStats.vram_total) }} TOTAL</span>
+            </div>
+            <div class="vram-header" *ngIf="systemStats.vram_total === 0">
+              <span class="leg-label" style="opacity: 0.5;">Unified Memory Architecture</span>
+            </div>
           </div>
-          <div class="gpu-model-label">{{ systemStats.gpu_name }}</div>
+
+          <div class="gpu-model-label" style="font-size: 0.7rem; color: var(--text-tertiary); text-align: center;">
+            <i class="ri-information-line"></i> {{ systemStats.gpu_name }}
+          </div>
         </div>
 
         <!-- Connectivity Card -->
@@ -360,18 +478,87 @@
           </div>
         </div>
 
-        <!-- Disk Card -->
-        <div class="stat-card disk-card fade-in" *ngIf="widgetVisibility.disk">
+        <!-- Disk Performance Dashboard Card -->
+        <div class="stat-card disk-perf-card fade-in" *ngIf="widgetVisibility.disk">
           <div class="card-header">
-            <span class="icon"><i class="ri-hard-drive-2-line"></i></span>
-            <h3>Disk Activity</h3>
+            <span class="icon" [style.color]="'#FCE100'"><i class="ri-hard-drive-3-line"></i></span>
+            <h3>Storage Performance</h3>
+            <span class="disk-health-badge">Healthy</span>
           </div>
-          <div class="chart-container">
-            <canvas #diskIOHistoryCanvas></canvas>
+
+          <!-- Total I/O Velocity -->
+          <div class="disk-io-velocity">
+            <div class="velocity-item read">
+              <span class="vel-label">Read Speed</span>
+              <span class="vel-val">{{ formatBytes(systemStats.disk_read_speed) }}/s</span>
+              <i class="ri-arrow-down-double-line" style="color: var(--accent-blue); opacity: 0.5;"></i>
+            </div>
+            <div class="velocity-item write">
+              <span class="vel-label">Write Speed</span>
+              <span class="vel-val">{{ formatBytes(systemStats.disk_write_speed) }}/s</span>
+              <i class="ri-arrow-up-double-line" style="color: var(--accent-yellow); opacity: 0.5;"></i>
+            </div>
           </div>
-          <div class="disk-io-summary-compact">
-            <span class="read">R: {{ formatBytes(systemStats.disk_read_speed) }}/s</span>
-            <span class="write">W: {{ formatBytes(systemStats.disk_write_speed) }}/s</span>
+
+          <!-- Partition Breakdown -->
+          <div class="partition-list">
+            <div class="partition-item" *ngFor="let disk of systemStats.disks">
+              <div class="part-header">
+                <div class="part-info">
+                  <span class="part-name">{{ disk.name }}</span>
+                  <span class="part-type">{{ disk.kind }}</span>
+                </div>
+                <span class="part-usage-text">{{ (( (disk.total_space - disk.available_space) / disk.total_space) *
+                  100).toFixed(1) }}% Filled</span>
+              </div>
+              <div class="part-bar-container">
+                <div class="part-fill"
+                  [style.width.%]="((disk.total_space - disk.available_space) / disk.total_space) * 100"
+                  [class.high]="((disk.total_space - disk.available_space) / disk.total_space) * 100 > 85"></div>
+              </div>
+              <div class="part-footer">
+                <span>Free: {{ formatBytes(disk.available_space) }}</span>
+                <span>Total: {{ formatBytes(disk.total_space) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hardware Sensors Dashboard -->
+        <div class="stat-card sensors-card fade-in" *ngIf="widgetVisibility.info && systemStats.sensors.length > 0">
+          <div class="card-header">
+            <span class="icon" [style.color]="'#60CDFF'"><i class="ri-temp-cold-line"></i></span>
+            <h3>Hardware Sensors</h3>
+            <span class="disk-health-badge" style="background: rgba(96, 205, 255, 0.1); color: #60CDFF;">{{
+              systemStats.sensors.length }} Sensors</span>
+          </div>
+
+          <div class="sensors-list">
+            <div class="sensor-item" *ngFor="let sensor of systemStats.sensors">
+              <div class="sensor-main">
+                <i [class]="sensor.label.toLowerCase().includes('fan') ? 'ri-windy-line' : 'ri-temp-hot-line'"
+                  class="sensor-icon"></i>
+                <div class="sensor-info">
+                  <span class="sensor-name">{{ sensor.label }}</span>
+                  <span class="sensor-category">{{ sensor.label.toLowerCase().includes('cpu') ? 'Processor' :
+                    (sensor.label.toLowerCase().includes('gpu') ? 'Graphics' : 'Mainboard') }}</span>
+                </div>
+              </div>
+              <div class="sensor-reading">
+                <span class="sensor-val" [class.hot]="(sensor.temp || 0) > 80" [class.warm]="(sensor.temp || 0) > 65">
+                  {{ sensor.temp !== null ? sensor.temp.toFixed(1) + (sensor.label.toLowerCase().includes('fan') ? '
+                  RPM' : '°C')
+                  : '--' }}
+                </span>
+                <span class="sensor-limit" *ngIf="sensor.max_temp !== null && sensor.max_temp > 0">Limit: {{
+                  sensor.max_temp }}°C</span>
+                <div class="sensor-bar-mini"
+                  *ngIf="sensor.temp !== null && sensor.max_temp !== null && sensor.max_temp > 0">
+                  <div class="sensor-fill-mini" [style.width.%]="(sensor.temp / sensor.max_temp) * 100"
+                    [class.hot]="(sensor.temp / sensor.max_temp) * 100 > 85"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
