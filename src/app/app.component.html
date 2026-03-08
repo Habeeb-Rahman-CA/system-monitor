@@ -575,6 +575,7 @@
         <button [class.active]="devSubTab === 'db'" (click)="setDevSubTab('db')">Databases</button>
         <button [class.active]="devSubTab === 'pkg'" (click)="setDevSubTab('pkg')">Pkg Managers</button>
         <button [class.active]="devSubTab === 'git'" (click)="setDevSubTab('git')">Git</button>
+        <button [class.active]="devSubTab === 'env'" (click)="setDevSubTab('env')">Env Info</button>
       </div>
 
       <div class="management-controls">
@@ -821,8 +822,60 @@
           </div>
         </div>
 
+        <!-- Environment Info Grid -->
+        <div *ngIf="devSubTab === 'env' && !isLoadingEnv" class="env-grid">
+          <div class="env-card" *ngIf="environmentInfo">
+            <div class="env-item">
+              <div class="env-icon node"><i class="ri-nodejs-line"></i></div>
+              <div class="env-content">
+                <span class="label">Node.js</span>
+                <span class="value">{{ environmentInfo.node_version }}</span>
+              </div>
+            </div>
+            <div class="env-item">
+              <div class="env-icon python"><i class="ri-python-line"></i></div>
+              <div class="env-content">
+                <span class="label">Python</span>
+                <span class="value">{{ environmentInfo.python_version }}</span>
+              </div>
+            </div>
+            <div class="env-item">
+              <div class="env-icon rust"><i class="ri-rust-line"></i></div>
+              <div class="env-content">
+                <span class="label">Rust (rustc)</span>
+                <span class="value">{{ environmentInfo.rust_version }}</span>
+              </div>
+            </div>
+            <div class="env-item">
+              <div class="env-icon git"><i class="ri-git-merge-line"></i></div>
+              <div class="env-content">
+                <span class="label">Git</span>
+                <span class="value">{{ environmentInfo.git_version }}</span>
+              </div>
+            </div>
+            <div class="env-item">
+              <div class="env-icon os"><i class="ri-windows-line"></i></div>
+              <div class="env-content">
+                <span class="label">OS Specs</span>
+                <span class="value">{{ environmentInfo.os_details }}</span>
+              </div>
+            </div>
+            <div class="env-item">
+              <div class="env-icon shell"><i class="ri-terminal-box-line"></i></div>
+              <div class="env-content">
+                <span class="label">Shell Type</span>
+                <span class="value badge">{{ environmentInfo.shell_type }}</span>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!environmentInfo" class="empty-state">
+            <i class="ri-error-warning-line"></i>
+            <p>Failed to collect environment information</p>
+          </div>
+        </div>
+
         <div class="loading-overlay"
-          *ngIf="isLoadingPorts || isLoadingServers || isLoadingCoding || isLoadingDocker || isLoadingDb || isLoadingPkg || isLoadingGit"
+          *ngIf="isLoadingPorts || isLoadingServers || isLoadingCoding || isLoadingDocker || isLoadingDb || isLoadingPkg || isLoadingGit || isLoadingEnv"
           style="text-align: center; padding: 3rem;">
           <div class="spinner"></div>
           <p>{{ isLoadingPorts ? 'Scanning active ports...' :
@@ -831,6 +884,7 @@
             isLoadingDb ? 'Detecting database servers...' :
             isLoadingPkg ? 'Monitoring package managers...' :
             isLoadingGit ? 'Fetching git activity...' :
+            isLoadingEnv ? 'Collecting environment info...' :
             'Fetching Docker containers...' }}</p>
         </div>
       </div>

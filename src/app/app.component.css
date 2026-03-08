@@ -2215,3 +2215,121 @@ h3 {
   font-style: italic;
   font-size: 0.85rem;
 }
+
+/* ── Environment Info ──────────────────────────────────── */
+.env-grid {
+  padding: 1rem;
+  animation: envFadeIn 0.4s var(--ease-decel);
+}
+
+.env-card {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  background: var(--fluent-layer-2);
+  border: 1px solid var(--fluent-stroke-card);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow-16);
+}
+
+.env-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.2s var(--ease-standard), background 0.2s;
+}
+
+.env-item:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--accent-subtle);
+}
+
+.env-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.env-icon.node {
+  background: rgba(104, 159, 99, 0.15);
+  color: #689f63;
+}
+
+.env-icon.python {
+  background: rgba(55, 118, 171, 0.15);
+  color: #3776ab;
+}
+
+.env-icon.rust {
+  background: rgba(247, 76, 0, 0.15);
+  color: #f74c00;
+}
+
+.env-icon.git {
+  background: rgba(240, 80, 50, 0.15);
+  color: #f05032;
+}
+
+.env-icon.os {
+  background: rgba(0, 120, 212, 0.15);
+  color: #0078d4;
+}
+
+.env-icon.shell {
+  background: rgba(136, 136, 136, 0.15);
+  color: #888;
+}
+
+.env-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.env-content .label {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.env-content .value {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-family: 'Segoe UI', monospace;
+  word-break: break-all;
+}
+
+.env-content .value.badge {
+  background: var(--accent-subtle);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  width: fit-content;
+}
+
+@keyframes envFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

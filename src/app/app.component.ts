@@ -114,6 +114,15 @@ interface GitStatus {
   repo_name: string;
 }
 
+interface EnvironmentInfo {
+  node_version: string;
+  python_version: string;
+  rust_version: string;
+  git_version: string;
+  os_details: string;
+  shell_type: string;
+}
+
 type ProcessSortKey = 'name' | 'cpu_usage' | 'memory' | 'pid';
 
 interface SystemStats {
@@ -208,7 +217,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   lastMgmtRefresh = 0;
   isLoadingMgmt = false;
   mgmtSubTab: 'services' | 'startup' = 'services';
-  devSubTab: 'ports' | 'servers' | 'coding' | 'docker' | 'db' | 'pkg' | 'git' = 'ports';
+  devSubTab: 'ports' | 'servers' | 'coding' | 'docker' | 'db' | 'pkg' | 'git' | 'env' = 'ports';
   services: ServiceInfo[] = [];
   startupApps: StartupInfo[] = [];
   activePorts: PortInfo[] = [];
@@ -224,6 +233,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   pkgManagers: PkgManagerInfo[] = [];
   p_filteredPkgManagers: PkgManagerInfo[] = [];
   gitStatus: GitStatus | null = null;
+  environmentInfo: EnvironmentInfo | null = null;
   isLoadingPorts = false;
   isLoadingServers = false;
   isLoadingCoding = false;
@@ -231,6 +241,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   isLoadingDb = false;
   isLoadingPkg = false;
   isLoadingGit = false;
+  isLoadingEnv = false;
   lastPortsRefresh = 0;
   managementSearchTerm = '';
 
@@ -1036,7 +1047,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   async refreshDevData() {
     if (this.isLoadingPorts || this.isLoadingServers || this.isLoadingCoding || this.isLoadingDocker ||
-      this.isLoadingDb || this.isLoadingPkg || this.isLoadingGit) return;
+      this.isLoadingDb || this.isLoadingPkg || this.isLoadingGit || this.isLoadingEnv) return;
     try {
       if (this.devSubTab === 'ports') {
         this.isLoadingPorts = true;
@@ -1070,6 +1081,9 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
       } else if (this.devSubTab === 'git') {
         this.isLoadingGit = true;
         this.gitStatus = await invoke<GitStatus>('get_git_activity');
+      } else if (this.devSubTab === 'env') {
+        this.isLoadingEnv = true;
+        this.environmentInfo = await invoke<EnvironmentInfo>('get_environment_info');
       }
       this.lastPortsRefresh = Date.now();
     } catch (e) {
@@ -1082,6 +1096,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.isLoadingDb = false;
       this.isLoadingPkg = false;
       this.isLoadingGit = false;
+      this.isLoadingEnv = false;
       this.cdr.markForCheck();
     }
   }
@@ -1269,7 +1284,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.updateFilteredPkgManagers();
   }
 
-  setDevSubTab(tab: 'ports' | 'servers' | 'coding' | 'docker' | 'db' | 'pkg' | 'git') {
+  setDevSubTab(tab: 'ports' | 'servers' | 'coding' | 'docker' | 'db' | 'pkg' | 'git' | 'env') {
     this.devSubTab = tab;
     this.refreshDevData();
   }

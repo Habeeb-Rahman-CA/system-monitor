@@ -85,6 +85,16 @@ struct PortInfo {
 }
 
 #[derive(Serialize)]
+struct EnvironmentInfo {
+    node_version: String,
+    python_version: String,
+    rust_version: String,
+    git_version: String,
+    os_details: String,
+    shell_type: String,
+}
+
+#[derive(Serialize)]
 struct DevServerInfo {
     framework: String,
     url: String,
@@ -839,6 +849,72 @@ async fn get_git_activity() -> Result<GitStatus, String> {
     })
 }
 
+#[tauri::command]
+async fn get_environment_info() -> Result<EnvironmentInfo, String> {
+    use std::process::Command;
+
+    let mut info = EnvironmentInfo {
+        node_version: "Not found".to_string(),
+        python_version: "Not found".to_string(),
+        rust_version: "Not found".to_string(),
+        git_version: "Not found".to_string(),
+        os_details: format!(
+            "{} {} ({})",
+            System::name().unwrap_or_default(),
+            System::os_version().unwrap_or_default(),
+            System::cpu_arch()
+        ),
+        shell_type: "Unknown".to_string(),
+    };
+
+    // Node Version
+    if let Ok(out) = Command::new("node").arg("--version").output() {
+        info.node_version = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    }
+
+    // Python Version
+    if let Ok(out) = Command::new("python").arg("--version").output() {
+        info.python_version = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    } else if let Ok(out) = Command::new("python3").arg("--version").output() {
+        info.python_version = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    }
+
+    // Rust Version
+    if let Ok(out) = Command::new("rustc").arg("--version").output() {
+        info.rust_version = String::from_utf8_lossy(&out.stdout)
+            .split_whitespace()
+            .nth(1)
+            .unwrap_or("Unknown")
+            .to_string();
+    }
+
+    // Git Version
+    if let Ok(out) = Command::new("git").arg("--version").output() {
+        info.git_version = String::from_utf8_lossy(&out.stdout)
+            .replace("git version", "")
+            .trim()
+            .to_string();
+    }
+
+    // Shell Type
+    #[cfg(target_os = "windows")]
+    {
+        if std::env::var("PSModulePath").is_ok() {
+            info.shell_type = "PowerShell".to_string();
+        } else {
+            info.shell_type = "CMD".to_string();
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        if let Ok(shell) = std::env::var("SHELL") {
+            info.shell_type = shell.split('/').last().unwrap_or("Unknown").to_string();
+        }
+    }
+
+    Ok(info)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -894,7 +970,8 @@ pub fn run() {
             control_docker_container,
             get_db_servers,
             get_pkg_managers,
-            get_git_activity
+            get_git_activity,
+            get_environment_info
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
