@@ -3988,24 +3988,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "system-monitor"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "local-ip-address",
- "reqwest",
- "serde",
- "serde_json",
- "starship-battery",
- "sysinfo",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-opener",
-]
-
-[[package]]
 name = "tao"
 version = "0.34.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6017,6 +5999,24 @@ name = "zmij"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8848ee67ecc8aedbaf3e4122217aff892639231befc6a1b58d29fff4c2cabaa"
+
+[[package]]
+name = "zoh"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "local-ip-address",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "starship-battery",
+ "sysinfo",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-opener",
+]
 
 [[package]]
 name = "zvariant"

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "system-monitor",
+  "productName": "ZOH",
   "version": "0.1.0",
   "identifier": "com.habee.system-monitor",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "system-monitor",
+        "title": "ZOH: AI SYSTEM MONITOR",
         "width": 1000,
         "height": 800,
         "transparent": false,

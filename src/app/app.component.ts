@@ -234,6 +234,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   systemStats: SystemStats | null = null;
   interval: any;
   appStartTime = Date.now();
+  isAppReady = false;
 
   cpuChart: Chart | null = null;
   memoryChart: Chart | null = null;
@@ -397,7 +398,17 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   publicIp: string = 'Detecting...';
 
 
-  ngOnInit() {
+  async ngOnInit() {
+    // Initial fetch
+    await this.fetchStats();
+    this.fetchPublicIp();
+
+    // Minimum splash duration 2.5s
+    setTimeout(() => {
+      this.isAppReady = true;
+      this.cdr.markForCheck();
+    }, 2500);
+
     this.interval = setInterval(() => {
       this.fetchStats();
       const now = Date.now();
@@ -411,7 +422,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
       }
       this.cdr.markForCheck(); // Trigger manual CD update
     }, 1000);
-    this.fetchPublicIp();
   }
 
 
