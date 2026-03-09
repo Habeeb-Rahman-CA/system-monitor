@@ -160,6 +160,14 @@ interface SavedApiRequest {
   request: HttpRequest;
 }
 
+interface DevAdvice {
+  id: string;
+  severity: 'warning' | 'info' | 'critical';
+  title: string;
+  message: string;
+  icon: string;
+}
+
 type ProcessSortKey = 'name' | 'cpu_usage' | 'memory' | 'pid';
 
 interface SystemStats {
@@ -327,6 +335,9 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   p_filteredProcesses: ProcessInfo[] = [];
   p_filteredServices: ServiceInfo[] = [];
   p_filteredStartupApps: StartupInfo[] = [];
+
+  // Dev Advisor State
+  devAdvices: DevAdvice[] = [];
 
   // Alerts State
   alerts: Alert[] = [];
@@ -1193,6 +1204,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         await this.loadApiCollections();
       }
       this.lastPortsRefresh = Date.now();
+      this.analyzeDevEnvironment();
     } catch (e) {
       console.error("Failed to fetch dev data", e);
     } finally {
@@ -1206,6 +1218,75 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.isLoadingEnv = false;
       this.cdr.markForCheck();
     }
+  }
+
+  analyzeDevEnvironment() {
+    const advices: DevAdvice[] = [];
+
+    // 1. Check for common port conflicts
+    const portConflicts = [
+      { port: 3000, name: 'React / Next.js' },
+      { port: 5173, name: 'Vite' },
+      { port: 8080, name: 'Vue / Node' },
+      { port: 4200, name: 'Angular' },
+      { port: 8000, name: 'Django / PHP' },
+      { port: 5000, name: 'Flask / Node' }
+    ];
+
+    portConflicts.forEach(conf => {
+      const active = this.activePorts.find(p => p.port === conf.port);
+      if (active) {
+        advices.push({
+          id: `port_${conf.port}`,
+          severity: 'warning',
+          title: `Port ${conf.port} in use`,
+          message: `${conf.name} dev server may fail to start. (Occupied by: ${active.process_name})`,
+          icon: 'ri-error-warning-line'
+        });
+      }
+    });
+
+    // 2. Check for heavy dev processes
+    if (this.systemStats) {
+      const heavyProcs = this.systemStats.processes
+        .filter(p => (p.name.toLowerCase().includes('node') || p.name.toLowerCase().includes('python')) && p.memory > 1024 * 1024 * 1024);
+
+      heavyProcs.forEach(p => {
+        advices.push({
+          id: `heavy_proc_${p.pid}`,
+          severity: 'info',
+          title: 'Resource Intensive Dev Process',
+          message: `${p.name} (PID: ${p.pid}) is using ${this.formatBytes(p.memory)} of RAM.`,
+          icon: 'ri-ram-line'
+        });
+      });
+    }
+
+    // 3. Git status check
+    if (this.gitStatus && this.gitStatus.uncommitted_changes > 15) {
+      advices.push({
+        id: 'git_too_many_changes',
+        severity: 'info',
+        title: 'Large workspace diff',
+        message: `${this.gitStatus.uncommitted_changes} files modified. Consider committing your progress.`,
+        icon: 'ri-git-branch-line'
+      });
+    }
+
+    // 4. Docker check
+    const stoppedContainers = this.dockerContainers.filter(c => c.state === 'exited').length;
+    if (stoppedContainers > 5) {
+      advices.push({
+        id: 'docker_cleanup',
+        severity: 'info',
+        title: 'Docker Cleanup Suggestion',
+        message: `You have ${stoppedContainers} stopped containers. Pruning them could free up disk space.`,
+        icon: 'ri-delete-bin-line'
+      });
+    }
+
+    this.devAdvices = advices;
+    this.cdr.markForCheck();
   }
 
   updateFilteredDbServers() {

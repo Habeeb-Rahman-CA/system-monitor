@@ -974,6 +974,16 @@
         </button>
       </div>
 
+      <!-- Smart Dev Advisor -->
+      <div class="dev-advisor-banner fade-in" *ngIf="devAdvices.length > 0">
+        <div class="advisor-item" *ngFor="let advice of devAdvices" [class]="advice.severity">
+          <div class="advisor-icon"><i [class]="advice.icon"></i></div>
+          <div class="advisor-text">
+            <strong>{{ advice.title }}</strong>: {{ advice.message }}
+          </div>
+        </div>
+      </div>
+
       <div class="management-tabs">
         <button [class.active]="devSubTab === 'ports'" (click)="setDevSubTab('ports')">Ports in Use</button>
         <button [class.active]="devSubTab === 'servers'" (click)="setDevSubTab('servers')">Localhost Servers</button>
