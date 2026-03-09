@@ -235,54 +235,66 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   interval: any;
   appStartTime = Date.now();
   isAppReady = false;
-  appVersion = "1.0.3";
+  appVersion = "1.0.4";
   isCheckingUpdate = false;
+  isUpdateAvailable = false;
+  updateData: any = null;
+  updateStatus: 'idle' | 'checking' | 'available' | 'uptodate' | 'error' | 'downloading' | 'installing' = 'idle';
+  updateErrorMsg = '';
 
   async checkUpdates(silent = false) {
+    if (this.updateStatus === 'checking' || this.updateStatus === 'downloading') return;
+
     try {
       this.isCheckingUpdate = true;
+      this.updateStatus = 'checking';
+      this.updateErrorMsg = '';
       this.cdr.markForCheck();
 
       const { check } = await import('@tauri-apps/plugin-updater');
       const update = await check();
 
       if (update) {
-        const { ask } = await import('@tauri-apps/plugin-dialog');
-        const yes = await ask(`New version ${update.version} is available! Would you like to install it now?`, {
-          title: 'Update Available',
-          kind: 'info',
-          okLabel: 'Install & Relaunch',
-          cancelLabel: 'Later'
-        });
-
-        if (yes) {
-          await update.downloadAndInstall();
+        this.updateData = update;
+        this.isUpdateAvailable = true;
+        this.updateStatus = 'available';
+      } else {
+        this.updateStatus = 'uptodate';
+        if (!silent) {
+          setTimeout(() => {
+            this.updateStatus = 'idle';
+            this.cdr.markForCheck();
+          }, 3000);
         }
-      } else if (!silent) {
-        const { message } = await import('@tauri-apps/plugin-dialog');
-        await message('You are already on the latest version of ZOH.', {
-          title: 'No Updates',
-          kind: 'info'
-        });
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Update check failed", e);
-      if (!silent) {
-        try {
-          const { message } = await import('@tauri-apps/plugin-dialog');
-          await message('Failed to check for updates. Please check your internet connection and try again later.\n\nError: ' + e, {
-            title: 'Update Error',
-            kind: 'error'
-          });
-        } catch (innerErr) {
-          // Fallback if dialog plugin fails
-          alert("Update check failed: " + e);
-        }
-      }
+      this.updateStatus = 'error';
+      this.updateErrorMsg = e?.message || String(e);
     } finally {
       this.isCheckingUpdate = false;
       this.cdr.markForCheck();
     }
+  }
+
+  async installUpdate() {
+    if (!this.updateData) return;
+    try {
+      this.updateStatus = 'downloading';
+      this.cdr.markForCheck();
+      await this.updateData.downloadAndInstall();
+      // App will relaunch automatically
+    } catch (e: any) {
+      this.updateStatus = 'error';
+      this.updateErrorMsg = "Installation failed: " + (e?.message || String(e));
+      this.cdr.markForCheck();
+    }
+  }
+
+  closeUpdateModal() {
+    this.isUpdateAvailable = false;
+    this.updateStatus = 'idle';
+    this.cdr.markForCheck();
   }
 
   cpuChart: Chart | null = null;

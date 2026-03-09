@@ -116,9 +116,15 @@
     </div>
 
     <div class="sidebar-v-info" *ngIf="!isSidebarCollapsed">
-      <span class="v-tag">v{{ appVersion }}</span>
-      <button class="update-check-btn" (click)="checkUpdates()" [disabled]="isCheckingUpdate">
-        <i class="ri-refresh-line" [class.spin]="isCheckingUpdate"></i>
+      <span class="v-tag" [class.v-update]="updateStatus === 'available'" [class.v-error]="updateStatus === 'error'">
+        v{{ appVersion }}
+      </span>
+      <button class="update-check-btn" (click)="checkUpdates()" [disabled]="isCheckingUpdate"
+        [title]="updateStatus === 'uptodate' ? 'Up to date' : 'Check for updates'">
+        <i *ngIf="updateStatus === 'idle' || updateStatus === 'available' || updateStatus === 'error'"
+          class="ri-refresh-line" [class.spin]="isCheckingUpdate"></i>
+        <i *ngIf="updateStatus === 'checking'" class="ri-loader-4-line spin"></i>
+        <i *ngIf="updateStatus === 'uptodate'" class="ri-checkbox-circle-line success-color"></i>
       </button>
     </div>
   </aside>
@@ -1647,6 +1653,56 @@
         </div>
       </div>
     </section>
+    <!-- Custom Update Modal -->
+    <div class="update-modal-overlay"
+      *ngIf="isUpdateAvailable || updateStatus === 'error' || updateStatus === 'downloading'">
+      <div class="update-modal">
+        <div class="update-header">
+          <div class="update-icon" [class.error]="updateStatus === 'error'">
+            <i *ngIf="updateStatus === 'available'" class="ri-rocket-2-line"></i>
+            <i *ngIf="updateStatus === 'error'" class="ri-error-warning-line"></i>
+            <i *ngIf="updateStatus === 'downloading'" class="ri-download-cloud-2-line spin-slow"></i>
+          </div>
+          <div class="update-title-group">
+            <div class="update-label">{{ updateStatus === 'error' ? 'Update Error' : (updateStatus === 'downloading' ?
+              'Downloading Update' : 'New Update Available') }}</div>
+            <div class="update-version" *ngIf="updateData">Version {{ updateData.version }}</div>
+          </div>
+          <button class="update-close" (click)="closeUpdateModal()" *ngIf="updateStatus !== 'downloading'"><i
+              class="ri-close-line"></i></button>
+        </div>
+
+        <div class="update-body">
+          <div class="update-notes" *ngIf="updateData?.notes">
+            <div class="notes-label">What's New:</div>
+            <div class="notes-content">{{ updateData.notes }}</div>
+          </div>
+
+          <div class="update-error-box" *ngIf="updateStatus === 'error'">
+            {{ updateErrorMsg }}
+          </div>
+
+          <div class="update-progress-container" *ngIf="updateStatus === 'downloading'">
+            <div class="progress-bar">
+              <div class="progress-fill indeterminate"></div>
+            </div>
+            <div class="progress-text">Downloading and installing... The app will restart automatically.</div>
+          </div>
+        </div>
+
+        <div class="update-footer" *ngIf="updateStatus === 'available'">
+          <button class="btn-secondary" (click)="closeUpdateModal()">Later</button>
+          <button class="btn-primary" (click)="installUpdate()">
+            <i class="ri-download-line"></i>
+            Install & Relaunch
+          </button>
+        </div>
+
+        <div class="update-footer" *ngIf="updateStatus === 'error'">
+          <button class="btn-primary" (click)="closeUpdateModal()">Dismiss</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <section class="loading" *ngIf="!systemStats">
