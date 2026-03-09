@@ -4419,3 +4419,109 @@ h3 {
   flex: 1;
   line-height: 1.4;
 }
+
+/* -- Resource Hog Finder Card -------------------------------- */
+.hog-card {
+  border-left: 3px solid #FF5E5E;
+}
+
+.hog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.hog-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: var(--fluent-layer-2);
+  border: 1px solid var(--fluent-stroke-card);
+  border-radius: 8px;
+  transition: transform 0.2s;
+}
+
+.hog-item:hover {
+  transform: translateX(4px);
+  background: rgba(255, 94, 94, 0.05);
+}
+
+.hog-rank {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-tertiary);
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.hog-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hog-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hog-id {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  font-family: monospace;
+}
+
+.hog-stats {
+  display: flex;
+  gap: 1rem;
+}
+
+.h-stat-small {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.h-stat-small .label {
+  font-size: 0.55rem;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.h-stat-small .value {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-family: 'Segoe UI', monospace;
+}
+
+.h-stat-small .value.heavy {
+  color: #FF5E5E;
+  text-shadow: 0 0 8px rgba(255, 94, 94, 0.3);
+}
+
+.kill-btn-mini {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.kill-btn-mini:hover {
+  color: #FF5E5E;
+  background: rgba(255, 94, 94, 0.1);
+  transform: scale(1.1);
+}

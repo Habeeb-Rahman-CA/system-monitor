@@ -388,8 +388,11 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     conn: true,
     usage: true,
     info: true,
-    processes: true
+    processes: true,
+    hogs: true
   };
+
+  topHogs: ProcessInfo[] = [];
 
   publicIp: string = 'Detecting...';
 
@@ -583,9 +586,26 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
       }
 
       this.updateCharts();
+      this.updateTopHogs();
     } catch (e) {
       console.error("Failed to fetch system stats", e);
     }
+  }
+
+  updateTopHogs() {
+    if (!this.systemStats) return;
+
+    // Impact = CPU% + (RAM / Total_RAM * 100)
+    const procImpact = (p: ProcessInfo) => {
+      const ramPct = (p.memory / (this.systemStats?.memory_total || 1)) * 100;
+      return p.cpu_usage + ramPct;
+    };
+
+    const list = [...this.systemStats.processes];
+    list.sort((a, b) => procImpact(b) - procImpact(a));
+
+    this.topHogs = list.slice(0, 5);
+    this.cdr.markForCheck();
   }
 
   initMainCharts() {

@@ -698,6 +698,38 @@
           </div>
         </div>
 
+        <!-- Resource Hog Finder Card -->
+        <div class="stat-card hog-card fade-in" *ngIf="widgetVisibility.hogs && topHogs.length > 0">
+          <div class="card-header">
+            <span class="icon" [style.color]="'#FF5E5E'"><i class="ri-fire-line"></i></span>
+            <h3>Top 5 Apps slowing your PC</h3>
+          </div>
+          <div class="hog-list">
+            <div class="hog-item" *ngFor="let hog of topHogs; let i = index; trackBy: trackByPid">
+              <div class="hog-rank">#{{ i + 1 }}</div>
+              <div class="hog-info">
+                <span class="hog-name">{{ hog.name }}</span>
+                <span class="hog-id">PID: {{ hog.pid }}</span>
+              </div>
+              <div class="hog-stats">
+                <div class="h-stat-small">
+                  <span class="label">CPU</span>
+                  <span class="value" [class.heavy]="hog.cpu_usage > 50">{{ hog.cpu_usage.toFixed(1) }}%</span>
+                </div>
+                <div class="h-stat-small">
+                  <span class="label">RAM</span>
+                  <span class="value">{{ formatBytes(hog.memory) }}</span>
+                </div>
+              </div>
+              <div class="hog-actions">
+                <button class="kill-btn-mini" (click)="killProcess(hog.pid)" title="Kill Process">
+                  <i class="ri-close-circle-line"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- App Usage Tracking -->
         <div class="stat-card usage-card fade-in" *ngIf="widgetVisibility.usage">
           <div class="card-header">
