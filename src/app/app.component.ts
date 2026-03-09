@@ -235,7 +235,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   interval: any;
   appStartTime = Date.now();
   isAppReady = false;
-  appVersion = "1.0.0";
+  appVersion = "1.0.2";
   isCheckingUpdate = false;
 
   async checkUpdates(silent = false) {
