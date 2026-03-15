@@ -618,50 +618,50 @@
         </div>
 
         <!-- Power & Battery Dashboard -->
-        <div class="stat-card battery-deep-card fade-in" *ngIf="widgetVisibility.info && systemStats?.battery">
+        <div class="stat-card battery-deep-card fade-in"
+          *ngIf="widgetVisibility.info && systemStats.battery as battery">
           <div class="card-header">
             <span class="icon" [style.color]="'#6CCB5F'"><i class="ri-battery-2-charge-line"></i></span>
             <h3>Power & Battery</h3>
-            <span class="disk-health-badge" *ngIf="systemStats?.battery?.is_charging"
+            <span class="disk-health-badge" *ngIf="battery.is_charging"
               style="background: rgba(108, 203, 95, 0.1); color: var(--accent-green);">Charging</span>
           </div>
 
           <div class="bat-main-display">
             <div class="bat-visual">
-              <div class="bat-level-fill" [style.height.%]="systemStats?.battery?.percentage"
-                [class.warning]="(systemStats?.battery?.percentage ?? 0) < 25"
-                [class.critical]="(systemStats?.battery?.percentage ?? 0) < 15">
+              <div class="bat-level-fill" [style.height.%]="battery.percentage"
+                [class.warning]="battery.percentage < 25" [class.critical]="battery.percentage < 15">
               </div>
-              <i class="ri-flashlight-fill bat-charging-icon" *ngIf="systemStats?.battery?.is_charging"></i>
+              <i class="ri-flashlight-fill bat-charging-icon" *ngIf="battery.is_charging"></i>
             </div>
             <div class="bat-text-info">
-              <span class="bat-pct">{{ systemStats?.battery?.percentage?.toFixed(0) }}%</span>
-              <span class="bat-status-label" [class.discharging]="!systemStats?.battery?.is_charging">
-                {{ systemStats?.battery?.status }}
+              <span class="bat-pct">{{ battery.percentage.toFixed(0) }}%</span>
+              <span class="bat-status-label" [class.discharging]="!battery.is_charging">
+                {{ battery.status }}
               </span>
             </div>
           </div>
 
           <div class="bat-details-grid">
-            <div class="bat-detail-item" *ngIf="systemStats?.battery?.time_remaining">
-              <span class="bat-detail-label">{{ systemStats?.battery?.is_charging ? 'Time to Full' : 'Time Remaining'
+            <div class="bat-detail-item" *ngIf="battery.time_remaining">
+              <span class="bat-detail-label">{{ battery.is_charging ? 'Time to Full' : 'Time Remaining'
                 }}</span>
-              <span class="bat-detail-val">{{ formatBatteryTime(systemStats?.battery?.time_remaining) }}</span>
+              <span class="bat-detail-val">{{ formatBatteryTime(battery.time_remaining) }}</span>
             </div>
-            <div class="bat-detail-item" *ngIf="systemStats?.battery?.power_usage !== null">
+            <div class="bat-detail-item" *ngIf="battery.power_usage !== null">
               <span class="bat-detail-label">Power Usage</span>
-              <span class="bat-detail-val">{{ systemStats?.battery?.power_usage?.toFixed(2) }} W</span>
+              <span class="bat-detail-val">{{ battery.power_usage.toFixed(2) }} W</span>
             </div>
-            <div class="bat-detail-item" *ngIf="systemStats?.battery?.health !== null">
+            <div class="bat-detail-item" *ngIf="battery.health !== null">
               <span class="bat-detail-label">Battery Health</span>
-              <span class="bat-detail-val">{{ systemStats?.battery?.health?.toFixed(1) }}%</span>
+              <span class="bat-detail-val">{{ battery.health.toFixed(1) }}%</span>
               <div class="bat-health-bar-container">
-                <div class="bat-health-fill" [style.width.%]="systemStats?.battery?.health"></div>
+                <div class="bat-health-fill" [style.width.%]="battery.health"></div>
               </div>
             </div>
-            <div class="bat-detail-item" *ngIf="systemStats?.battery?.cycle_count !== null">
+            <div class="bat-detail-item" *ngIf="battery.cycle_count !== null">
               <span class="bat-detail-label">Cycle Count</span>
-              <span class="bat-detail-val">{{ systemStats?.battery?.cycle_count }}</span>
+              <span class="bat-detail-val">{{ battery.cycle_count }}</span>
             </div>
           </div>
         </div>

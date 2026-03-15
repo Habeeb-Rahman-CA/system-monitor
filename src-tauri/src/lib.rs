@@ -1298,6 +1298,7 @@ fn get_gpu_usage_fallback() -> (f32, u64) {
 
         return (usage, vram);
     }
+    #[cfg(not(target_os = "windows"))]
     (0.0, 0)
 }
 
